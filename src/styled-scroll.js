@@ -90,8 +90,6 @@
 
 
 
-
-
 	var scrollbarWidth = null;
 		
 	//Source: http://stackoverflow.com/questions/13382516/getting-scroll-bar-width-using-javascript
@@ -140,6 +138,7 @@
 		if ('-ms-overflow-style' in this.scrollElementStyle) {
 			this.scrollElementStyle.msOverflowStyle = 'none';
 		} else if (getScrollbarWidth() > 0) {
+			this.scrollElementStyle.overflowX = 'hidden';
 			//Make this scrolling element larger than the containing element so that the scrollbar is hidden
 			this.scrollElementStyle.width = 'calc(100% + ' + getScrollbarWidth() + 'px)';
 			//Prevent user from scrolling the scrollbar into view
@@ -185,17 +184,15 @@
 		addResizeListener(this.scrollElement, this.requestScrollbarUpdate);
 		
 		this.requestScrollbarUpdate();
-		
-		return this;
 	}
 
 	StyledScroll.prototype = {
 		
 		initScrollbar: function () {
-			var scrollbarDiv = createScrollbarElement('v', true, 'custom');
+			var scrollbarDiv = createScrollbarElement();
 			this.parent.appendChild(scrollbarDiv);
 			
-			this.scrollbar = new Scrollbar(this, { el: scrollbarDiv });
+			this.scrollbar = new Scrollbar(this, scrollbarDiv);
 		},
 		
 		requestUpdate: function () {
@@ -215,9 +212,6 @@
 			this.isUpdateRequested = false;
 		},
 
-		scrollToElement: function () { },
-		scrollTo: function () { },
-		refresh: function () { },
 		destroy: function () { 
 			this.scrollbar.destroy();
 			// TODO: Unsure if explicit observer disconnect and resize listener removal are necessary, no observed leaks without them
@@ -263,7 +257,7 @@
 		},
 	};
 
-	function createScrollbarElement(direction, interactive, type) {
+	function createScrollbarElement() {
 		var scrollbar = document.createElement('div'),
 			indicator = document.createElement('div');
 
@@ -279,8 +273,8 @@
 		return scrollbar;
 	}
 
-	function Scrollbar(styledScroll, options) {
-		this.wrapper = options.el;
+	function Scrollbar(styledScroll, element) {
+		this.wrapper = element;
 		this.wrapperStyle = this.wrapper.style;
 		this.indicator = this.wrapper.children[0];
 		this.indicatorStyle = this.indicator.style;
@@ -293,7 +287,7 @@
 		var self = this;
 		startEvents.forEach(function (eventName) { 
 			self.indicator.addEventListener(eventName, self);
-		 });
+		});
 
 		endEvents.forEach(function (eventName) {
 			document.addEventListener(eventName, self);
@@ -314,8 +308,8 @@
 			
 			var indicatorHeight = wrapperHeight * clientHeight / scrollHeight;
 			//A quick benchmark showed Math.max performance to be worse than an if statement on IE11
-			if (indicatorHeight < 10) {
-				indicatorHeight = 10;
+			if (indicatorHeight < 20) {
+				indicatorHeight = 20;
 			}
 			this.indicator.style.height = indicatorHeight + 'px';
 			
@@ -368,7 +362,6 @@
 			});
 		},
 		
-		//TODO: Test cleanup
 		destroy: function () {
 			var self = this;
 			startEvents.forEach(function (eventName) {
@@ -391,7 +384,7 @@
 			} else if (endEvents.indexOf(e.type) != -1) {
 				this.end(e);
 			}
-		},
+		}
 	};
 
 

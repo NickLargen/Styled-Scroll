@@ -13,23 +13,16 @@
                 var ul = document.getElementById('elementToScroll');
                 var footer = document.getElementById('footer');
     
-                var liScrollers = [];
-                
                 header.onclick = function () {
                     for(var i = 0; i < 1; i++) {
                         var node = document.createElement("LI");
                         var textnode = document.createTextNode(ul.childElementCount);
                         node.appendChild(textnode);
                         ul.appendChild(node);
-                        
-                        liScrollers.push(new StyledScroll(node));
                     }
                 };
                 footer.onclick = function () {
                     for(var i = 0; i < 1; i++) {
-                        liScrollers.pop().destroy();
-                        console.log(liScrollers.length);
-                        
                         var nodes = document.querySelectorAll('#elementToScroll li');
                         ul.removeChild(nodes[nodes.length  - 1]);
                     }
