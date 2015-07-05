@@ -123,7 +123,8 @@
 
 		return scrollbarWidth = widthNoScroll - widthWithScroll;
 	};
-
+	
+	var styledScrollMutationConfig = { attributes: true, childList: true, subtree: true };
 
 	function StyledScroll(scrollElement, options) {
 		this.scrollElement = scrollElement;
@@ -145,26 +146,47 @@
 			this.parent.style.overflow = 'hidden';
 		}
 		
+		// Create storage for events that can be registered
+		this.events = {};
+		
 		// ----- SCROLLBAR HANDLING -----
 		this.initScrollbar();
 
 		var self = this;
-		var requestScrollbarUpdate = function () { 
+		this.requestScrollbarUpdate = function () { 
 			self.requestUpdate(); 
 			self.updateScrollbar = true;
 		};
 		
-		this.scrollElement.addEventListener('scroll', function () { self.requestUpdate(); });
+		this.scrollElement.addEventListener('scroll', function () { 
+			self.hasScrolledRecently = true;
+			self.requestUpdate();
+			if (!self.isScrolling) {
+				self.isScrolling = true;
+				self.triggerEvent('scrollStart');
+				
+				// Create a timer marks scrolling as ended if a scroll event has not occured within some timeout
+				var intervalId = setInterval(function checkIfScrolled() {
+					if (self.hasScrolledRecently) {
+						self.hasScrolledRecently = false;
+					} else {
+						clearInterval(intervalId);
+						self.isScrolling = false;
+						self.triggerEvent('scrollEnd');
+					}
+				}, 200);
+			}
+		});
 		
-		// create an observer instance
-		var observer = new MutationObserver(requestScrollbarUpdate);
-		var config = { attributes: true, childList: true, subtree: true };
+		// TODO: IE < 11 does not support mutation observer
+		this.observer = new MutationObserver(this.requestScrollbarUpdate);
+		this.observer.observe(this.scrollElement, styledScrollMutationConfig);
 
-		observer.observe(this.scrollElement, config);
-
-		addResizeListener(this.scrollElement, requestScrollbarUpdate);
+		addResizeListener(this.scrollElement, this.requestScrollbarUpdate);
 		
-		requestScrollbarUpdate();
+		this.requestScrollbarUpdate();
+		
+		return this;
 	}
 
 	StyledScroll.prototype = {
@@ -176,8 +198,8 @@
 			this.scrollbar = new Scrollbar(this, { el: scrollbarDiv });
 		},
 		
-		// Do not allow stacked update requests
 		requestUpdate: function () {
+			// Do not allow stacked update requests
 			if (!this.isUpdateRequested) {
 				this.isUpdateRequested = true;
 				var self = this;
@@ -195,9 +217,50 @@
 
 		scrollToElement: function () { },
 		scrollTo: function () { },
-		destroy: function () { this.scrollbar.destroy(); },
 		refresh: function () { },
+		destroy: function () { 
+			this.scrollbar.destroy();
+			// TODO: Unsure if explicit observer disconnect and resize listener removal are necessary, no observed leaks without them
+			this.observer.disconnect();
+			removeResizeListener(this.scrollElement, this.requestScrollbarUpdate);
+		},
+		
+		on: function (type, fn) {
+			if (!this.events[type]) {
+				this.events[type] = [];
+			}
 
+			this.events[type].push(fn);
+		},
+
+		off: function (type, fn) {
+			if (!this.events[type]) {
+				return;
+			}
+
+			var index = this.events[type].indexOf(fn);
+
+			if (index > -1) {
+				this.events[type].splice(index, 1);
+			}
+		},
+	
+		triggerEvent: function (type) {
+			var eventFunctions = this.events[type];
+			var numFunctions = eventFunctions && eventFunctions.length;
+			if ( !numFunctions ) {
+				return;
+			}
+	
+			var functionArgs = new Array(arguments.length - 1);
+			for(var i = 1; i < arguments.length; i++) {
+			    functionArgs[i - 1] = arguments[i];
+			}
+		
+			for (i = 0 ; i < numFunctions; i++ ) {
+				eventFunctions[i].apply(this, functionArgs);
+			}
+		},
 	};
 
 	function createScrollbarElement(direction, interactive, type) {
@@ -233,7 +296,7 @@
 		 });
 
 		endEvents.forEach(function (eventName) {
-			window.addEventListener(eventName, self);
+			document.addEventListener(eventName, self);
 		});
 	}
 	
@@ -281,7 +344,7 @@
 			
 			var self = this;
 			moveEvents.forEach(function (eventName) {
-				window.addEventListener(eventName, self);
+				document.addEventListener(eventName, self);
 			});
 		},
 
@@ -301,7 +364,7 @@
 		end: function (e) {
 			var self = this;
 			moveEvents.forEach(function (eventName) {
-				window.removeEventListener(eventName, self);
+				document.removeEventListener(eventName, self);
 			});
 		},
 		
@@ -313,10 +376,10 @@
 			});
 
 			moveEvents.concat(endEvents).forEach(function (eventName) {
-				window.removeEventListener(eventName, self);
+				document.removeEventListener(eventName, self);
 			});
 
-			this.wrapper.parentNode.removeChild(this.wrapper)
+			this.wrapper.parentNode.removeChild(this.wrapper);
 		},
 
 		handleEvent: function (e) {
