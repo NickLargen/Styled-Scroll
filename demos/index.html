@@ -1,0 +1,52 @@
+﻿<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Styled Scroll Demo</title>
+        <script type="text/javascript" src="../src/styled-scroll.js">
+</script>
+        <script type="text/javascript">
+            function loaded() {
+                var header = document.getElementById('header');
+                var ul = document.getElementById('elementToScroll');
+                var footer = document.getElementById('footer');
+    
+                header.onclick = function () {
+                    for(var i = 0; i < 100; i++) {
+                        var node = document.createElement("LI");
+                        var textnode = document.createTextNode(ul.childElementCount);
+                        node.appendChild(textnode);
+                        ul.appendChild(node);
+                    }
+                };
+                footer.onclick = function () {
+                    for(var i = 0; i < 100; i++) {
+                        ul.removeChild(ul.lastChild);
+                    }
+                    
+                };
+                
+                for (var i = 0; i < 2; i++) {
+                    header.click();
+                }
+                
+                new StyledScroll(ul);
+            }
+        </script>
+        <link rel="stylesheet" type="text/css" href="../demos/styles.css">
+    </head>
+    
+    <body onload="loaded()">
+        <button id="header">Add rows</button>
+        <div id="wrapper">
+            <ul id="elementToScroll">
+                <li>12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890</li>
+            
+            </ul>
+        </div>
+        <button id="footer">Remove rows</button>
+    </body>
+
+</html>
