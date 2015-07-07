@@ -186,7 +186,6 @@
 			}
 		});
 		
-		// TODO: IE < 11 does not support mutation observer
 		if (supportsMutationObserver) {
 			this.observer = new MutationObserver(this.requestScrollbarUpdate);
 			this.observer.observe(this.scrollElement, styledScrollMutationConfig);
@@ -231,7 +230,6 @@
 				console.warn('Attempted to destroy an already destroyed Styled Scroll object, ignoring request.');
 				return;
 			}
-			
 			this.isDestroyed = true;
 			
 			this.scrollbar.destroy();
@@ -303,9 +301,8 @@
 		this.scrollElement = styledScroll.scrollElement;
 		this.styledScroll = styledScroll;
 
-		this.lastPointY = 0;
-		this.indicatorDeltaY = 0;
-
+		this.lastMouseY = 0;
+		
 		var self = this;
 		startEvents.forEach(function (eventName) { 
 			self.indicator.addEventListener(eventName, self);
@@ -348,18 +345,24 @@
 			this.updateIndicatorPosition();
 		},
 		
+		// Calculate the percentage that the element is currently scrolled and multiply it by the length the indicator can scroll
+		getCurrentIndicatorTop: function () {
+			return this.scrollElement.scrollTop * this.scrollbarToElementRatio;
+		},
+		
 		updateIndicatorPosition: function () {
-			if (this.indicatorDeltaY != 0) {
-				this.scrollElement.scrollTop += this.indicatorDeltaY / this.scrollbarToElementRatio;
-				this.indicatorDeltaY = 0;
+			if (this.isDragged) {
+				this.scrollElement.scrollTop = (this.lastMouseY - this.dragTopOffset) / this.scrollbarToElementRatio;
+				this.isDragged = false;
 			}
-					 
-			// Calculate the percentage that the element is currently scrolled and multiply it by the length the indicator can scroll
-			this.indicatorStyle.transform = 'translateY(' + this.scrollElement.scrollTop * this.scrollbarToElementRatio + 'px)';
+			
+			this.indicatorStyle.transform = 'translateY(' + this.getCurrentIndicatorTop() + 'px)';
 		},
 
 		start: function (e) {
-			this.lastPointY = (e.touches ? e.touches[0] : e).pageY;
+			this.lastMouseY = (e.touches ? e.touches[0] : e).pageY
+
+			this.dragTopOffset = this.lastMouseY - this.getCurrentIndicatorTop();
 			
 			e.preventDefault();
 			e.stopPropagation();
@@ -372,11 +375,9 @@
 
 		//Consider performance: this function can be called 15+ times per frame
 		move: function (e) {
-			var pointY = (e.touches ? e.touches[0] : e).pageY;
+			this.lastMouseY = (e.touches ? e.touches[0] : e).pageY;
 
-			this.indicatorDeltaY += pointY - this.lastPointY;
-			this.lastPointY = pointY;
-			
+			this.isDragged = true;
 			this.styledScroll.requestUpdate();
 
 			e.preventDefault();
