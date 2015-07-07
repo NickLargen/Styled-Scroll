@@ -221,7 +221,7 @@
 			if (this.updateScrollbar) {
 				this.scrollbar.updateScrollbar();
 				this.updateScrollbar = false;
-			} else this.scrollbar.updateIndicatorPosition();
+			} else this.scrollbar.updateThumbPosition();
 			this.isUpdateRequested = false;
 		},
 
@@ -279,16 +279,16 @@
 
 	function createScrollbarElement() {
 		var scrollbar = document.createElement('div'),
-			indicator = document.createElement('div');
+			thumb = document.createElement('div');
 
-		indicator.className = 'styled-scroll-indicator';
+		thumb.className = 'styled-scroll-thumb';
 		//Prevent users from overriding styles that break functionality
-		indicator.style.boxSizing = 'border-box';
-		indicator.style.margin = '0px';
+		thumb.style.boxSizing = 'border-box';
+		thumb.style.margin = '0px';
 
 		scrollbar.className = 'styled-scroll-vertical-scrollbar';
 
-		scrollbar.appendChild(indicator);
+		scrollbar.appendChild(thumb);
 
 		return scrollbar;
 	}
@@ -296,8 +296,8 @@
 	function Scrollbar(styledScroll, element) {
 		this.wrapper = element;
 		this.wrapperStyle = this.wrapper.style;
-		this.indicator = this.wrapper.children[0];
-		this.indicatorStyle = this.indicator.style;
+		this.thumb = this.wrapper.children[0];
+		this.thumbStyle = this.thumb.style;
 		this.scrollElement = styledScroll.scrollElement;
 		this.styledScroll = styledScroll;
 
@@ -305,7 +305,7 @@
 		
 		var self = this;
 		startEvents.forEach(function (eventName) { 
-			self.indicator.addEventListener(eventName, self);
+			self.thumb.addEventListener(eventName, self);
 		});
 
 		endEvents.forEach(function (eventName) {
@@ -332,37 +332,37 @@
 			
 			var wrapperHeight = this.wrapper.clientHeight;
 			
-			var indicatorHeight = wrapperHeight * clientHeight / scrollHeight;
+			var thumbHeight = wrapperHeight * clientHeight / scrollHeight;
 			//A quick benchmark showed Math.max performance to be worse than an if statement on IE11
-			if (indicatorHeight < 20) {
-				indicatorHeight = 20;
+			if (thumbHeight < 20) {
+				thumbHeight = 20;
 			}
-			this.indicator.style.height = indicatorHeight + 'px';
+			this.thumb.style.height = thumbHeight + 'px';
 			
-			//Available height for the indicator to scroll divided by available height for the element to scroll
-			this.scrollbarToElementRatio = (wrapperHeight - indicatorHeight) / (scrollHeight - clientHeight);
+			//Available height for the thumb to scroll divided by available height for the element to scroll
+			this.scrollbarToElementRatio = (wrapperHeight - thumbHeight) / (scrollHeight - clientHeight);
 			
-			this.updateIndicatorPosition();
+			this.updateThumbPosition();
 		},
 		
-		// Calculate the percentage that the element is currently scrolled and multiply it by the length the indicator can scroll
-		getCurrentIndicatorTop: function () {
+		// Calculate the percentage that the element is currently scrolled and multiply it by the length the thumb can scroll
+		getCurrentThumbTop: function () {
 			return this.scrollElement.scrollTop * this.scrollbarToElementRatio;
 		},
 		
-		updateIndicatorPosition: function () {
+		updateThumbPosition: function () {
 			if (this.isDragged) {
 				this.scrollElement.scrollTop = (this.lastMouseY - this.dragTopOffset) / this.scrollbarToElementRatio;
 				this.isDragged = false;
 			}
 			
-			this.indicatorStyle.transform = 'translateY(' + this.getCurrentIndicatorTop() + 'px)';
+			this.thumbStyle.transform = 'translateY(' + this.getCurrentThumbTop() + 'px)';
 		},
 
 		start: function (e) {
 			this.lastMouseY = (e.touches ? e.touches[0] : e).pageY
 
-			this.dragTopOffset = this.lastMouseY - this.getCurrentIndicatorTop();
+			this.dragTopOffset = this.lastMouseY - this.getCurrentThumbTop();
 			
 			e.preventDefault();
 			e.stopPropagation();
@@ -394,7 +394,7 @@
 		destroy: function () {
 			var self = this;
 			startEvents.forEach(function (eventName) {
-				self.indicator.removeEventListener(eventName, self);
+				self.thumb.removeEventListener(eventName, self);
 			});
 
 			moveEvents.concat(endEvents).forEach(function (eventName) {

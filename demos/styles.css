@@ -89,7 +89,7 @@ body {
 	bottom: 0;
 }
 
-.styled-scroll-indicator {
+.styled-scroll-thumb {
     z-index: 100;
     background: rgba(0,0,0,0.5);
     border:1px solid rgba(255,255,255,0.9);
@@ -98,10 +98,10 @@ body {
     cursor: pointer;
 }
 
-.styled-scroll-indicator:hover { 
+.styled-scroll-thumb:hover { 
     border: 0;
 }
 
-.styled-scroll-vertical-scrollbar .styled-scroll-indicator {
+.styled-scroll-vertical-scrollbar .styled-scroll-thumb {
 	width: 100%;
 }
