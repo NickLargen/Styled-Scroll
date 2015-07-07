@@ -15,7 +15,6 @@ body, ul, li {
 body {
     font-size: 12px;
     font-family: ubuntu, helvetica, arial;
-    overflow: hidden; /* this is important to prevent the whole page to bounce */
 }
 
 #header,
@@ -55,7 +54,6 @@ body {
 
 #elementToScroll {
     width:100%;
-    overflow: auto;
     position: absolute;
     z-index: 1;
     list-style: none;
@@ -72,16 +70,8 @@ body {
     background-color: #fafafa;
     font-size: 14px;
 }
-#yearListRegion {
-    border: 20px solid red;
-    position: absolute; 
-    top: 50px;
-     left: 50px;
-      bottom: 200px; width: 20%; background: #E1F8E2; overflow: auto
-}
 
 /* styled-scroll scrollbars*/
-
 .hide-scrollbar ::-webkit-scrollbar {
     display: none;
 }

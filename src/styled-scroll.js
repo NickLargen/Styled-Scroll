@@ -8,6 +8,11 @@
 		window.msRequestAnimationFrame ||
 		function (callback) { window.setTimeout(callback, 1000 / 60); };
 
+	var supportsMutationObserver = window.MutationObserver !== undefined;
+
+	/** Detect what input events are supported in order to register listeners.
+	 * Pointer events include mouse and touch events so listening to everything can cause events to be received twice.
+	**/
 	var onlySupportsMSPointer = window.MSPointerEvent !== undefined && window.onpointerdown === undefined;
 
 	var pointerDown = onlySupportsMSPointer ? 'MSPointerDown' : 'pointerdown';
@@ -80,6 +85,7 @@
 		if (!element.__resizeListeners__.length) {
 			if (attachEvent) element.detachEvent('onresize', resizeListener);
 			else {
+				// TODO: investigate contentDocument undefined errors
 				element.__resizeTrigger__.contentDocument.defaultView.removeEventListener('resize', resizeListener);
 				element.__resizeTrigger__ = !element.removeChild(element.__resizeTrigger__);
 			}
@@ -103,6 +109,8 @@
 		outer.style.width = "100px";
 		outer.style.msOverflowStyle = "scrollbar"; // needed for WinJS apps
 	    
+		// Add hide-scrollbar class to compute width properly if it is used for removing scrollbars via css
+		document.body.classList.add('hide-scrollbar');
 		document.body.appendChild(outer);
 
 		var widthNoScroll = outer.offsetWidth;
@@ -118,11 +126,14 @@
 	    
 		// remove divs
 		outer.parentNode.removeChild(outer);
+		document.body.classList.remove('hide-scrollbar');
 
 		return scrollbarWidth = widthNoScroll - widthWithScroll;
 	};
 	
 	var styledScrollMutationConfig = { attributes: true, childList: true, subtree: true };
+	// Whether or not scrollbars are being hidden by modifying element size (for browsers that don't support hiding scrollbars)
+	var isUsingWidthHack = false;
 
 	function StyledScroll(scrollElement, options) {
 		this.scrollElement = scrollElement;
@@ -138,9 +149,7 @@
 		if ('-ms-overflow-style' in this.scrollElementStyle) {
 			this.scrollElementStyle.msOverflowStyle = 'none';
 		} else if (getScrollbarWidth() > 0) {
-			this.scrollElementStyle.overflowX = 'hidden';
-			//Make this scrolling element larger than the containing element so that the scrollbar is hidden
-			this.scrollElementStyle.width = 'calc(100% + ' + getScrollbarWidth() + 'px)';
+			isUsingWidthHack = true;
 			//Prevent user from scrolling the scrollbar into view
 			this.parent.style.overflow = 'hidden';
 		}
@@ -178,9 +187,14 @@
 		});
 		
 		// TODO: IE < 11 does not support mutation observer
-		this.observer = new MutationObserver(this.requestScrollbarUpdate);
-		this.observer.observe(this.scrollElement, styledScrollMutationConfig);
-
+		if (supportsMutationObserver) {
+			this.observer = new MutationObserver(this.requestScrollbarUpdate);
+			this.observer.observe(this.scrollElement, styledScrollMutationConfig);
+		} else {
+			this.scrollElement.addEventListener('DOMSubtreeModified', this.requestScrollbarUpdate);
+			console.log('Mutation observer support not detected, falling back to mutation events. Please verify your browser is up to date.')
+		}
+		
 		addResizeListener(this.scrollElement, this.requestScrollbarUpdate);
 		
 		this.requestScrollbarUpdate();
@@ -213,9 +227,17 @@
 		},
 
 		destroy: function () { 
+			if (this.isDestroyed) {
+				console.warn('Attempted to destroy an already destroyed Styled Scroll object, ignoring request.');
+				return;
+			}
+			
+			this.isDestroyed = true;
+			
 			this.scrollbar.destroy();
 			// TODO: Unsure if explicit observer disconnect and resize listener removal are necessary, no observed leaks without them
-			this.observer.disconnect();
+			if (supportsMutationObserver) this.observer.disconnect();
+			else this.scrollElement.removeEventListener('DOMSubtreeModified', this.requestScrollbarUpdate);
 			removeResizeListener(this.scrollElement, this.requestScrollbarUpdate);
 		},
 		
@@ -300,9 +322,16 @@
 			var clientHeight = this.scrollElement.clientHeight;
 			
 			if (clientHeight === scrollHeight) {
-				this.wrapperStyle.visibility = 'hidden';
+				if (this.wrapperStyle.visibility !== 'hidden') {
+					this.wrapperStyle.visibility = 'hidden';
+					if (isUsingWidthHack) this.scrollElement.style.width = '100%';
+				}
 				return;
-			} else this.wrapperStyle.visibility = 'visible';
+			} else if (this.wrapperStyle.visibility !== 'visible') { 
+				this.wrapperStyle.visibility = 'visible';
+				//Make the scrolling element larger than the containing element so that the scrollbar is hidden
+				if (isUsingWidthHack) this.scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px';
+			}
 			
 			var wrapperHeight = this.wrapper.clientHeight;
 			
@@ -320,14 +349,13 @@
 		},
 		
 		updateIndicatorPosition: function () {
-			var scrollTop = this.scrollElement.scrollTop;
 			if (this.indicatorDeltaY != 0) {
-				this.scrollElement.scrollTop = scrollTop += this.indicatorDeltaY / this.scrollbarToElementRatio;
+				this.scrollElement.scrollTop += this.indicatorDeltaY / this.scrollbarToElementRatio;
 				this.indicatorDeltaY = 0;
 			}
 					 
 			// Calculate the percentage that the element is currently scrolled and multiply it by the length the indicator can scroll
-			this.indicatorStyle.transform = 'translateY(' + scrollTop * this.scrollbarToElementRatio + 'px)';
+			this.indicatorStyle.transform = 'translateY(' + this.scrollElement.scrollTop * this.scrollbarToElementRatio + 'px)';
 		},
 
 		start: function (e) {
@@ -344,10 +372,10 @@
 
 		//Consider performance: this function can be called 15+ times per frame
 		move: function (e) {
-			var point = e.touches ? e.touches[0] : e;
+			var pointY = (e.touches ? e.touches[0] : e).pageY;
 
-			this.indicatorDeltaY += point.pageY - this.lastPointY;
-			this.lastPointY = point.pageY;
+			this.indicatorDeltaY += pointY - this.lastPointY;
+			this.lastPointY = pointY;
 			
 			this.styledScroll.requestUpdate();
 
