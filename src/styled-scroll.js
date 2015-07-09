@@ -7,6 +7,9 @@
 		window.oRequestAnimationFrame ||
 		window.msRequestAnimationFrame ||
 		function (callback) { window.setTimeout(callback, 1000 / 60); };
+		
+	// webkitTransform is the only prefix we care about since IE9 is not supported
+	var transformPrefixed = 'transform' in document.createElement('div').style ? 'transform' : 'webkitTransform';
 
 	var supportsMutationObserver = window.MutationObserver !== undefined;
 
@@ -26,80 +29,35 @@
 	var moveEvents = supportsPointer ? [pointerMove] : ['touchmove', 'mousemove'];
 	var endEvents = supportsPointer ? [pointerUp, pointerCancel] : ['touchend', 'mouseup', 'touchcancel', 'mousecancel'];
 
-	//Source: http://www.backalleycoder.com/2013/03/18/cross-browser-event-based-element-resize-detection/
-	var attachEvent = document.attachEvent;
-	var isIE = navigator.userAgent.match(/Trident/);
+	function addResizeTrigger(element, callback) {
+		// Create an element that supports resize events with the same height as the provided element
+		var resizeTrigger = document.createElement('iframe');
+		resizeTrigger.setAttribute('style', 'position: absolute; top: 0; left: 0; height: 100%; width: 0; border: none;');
+
+		resizeTrigger.onload = function () {
+			//TODO: Investigate why contentWindow was undefined/null on IE
+			if (resizeTrigger.contentWindow) resizeTrigger.contentWindow.onresize = callback;
+			else setTimeout(function () { 
+				if (resizeTrigger.contentWindow) resizeTrigger.contentWindow.onresize = callback;
+				else console.warn('Failed to attach resize trigger onto ' + element)
+			}, 200)
+		};
+		element.appendChild(resizeTrigger);
+		element.__resizeTrigger__ = element;
+	}
 	
-	var requestFrame = (function () {
-		var raf = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame ||
-			function (fn) { return window.setTimeout(fn, 20); };
-		return function (fn) { return raf(fn); };
-	})();
-
-	var cancelFrame = (function () {
-		var cancel = window.cancelAnimationFrame || window.mozCancelAnimationFrame || window.webkitCancelAnimationFrame ||
-			window.clearTimeout;
-		return function (id) { return cancel(id); };
-	})();
-
-	function resizeListener(e) {
-		var win = e.target || e.srcElement;
-		if (win.__resizeRAF__) cancelFrame(win.__resizeRAF__);
-		win.__resizeRAF__ = requestFrame(function () {
-			var trigger = win.__resizeTrigger__;
-			trigger.__resizeListeners__.forEach(function (fn) {
-				fn.call(trigger, e);
-			});
-		});
-	}
-
-	function objectLoad(e) {
-		this.contentDocument.defaultView.__resizeTrigger__ = this.__resizeElement__;
-		this.contentDocument.defaultView.addEventListener('resize', resizeListener);
-	}
-
-	window.addResizeListener = function (element, fn) {
-		if (!element.__resizeListeners__) {
-			element.__resizeListeners__ = [];
-			if (attachEvent) {
-				element.__resizeTrigger__ = element;
-				element.attachEvent('onresize', resizeListener);
-			}
-			else {
-				if (getComputedStyle(element).position == 'static') element.style.position = 'relative';
-				var obj = element.__resizeTrigger__ = document.createElement('object');
-				obj.setAttribute('style', 'display: block; position: absolute; top: 0; left: 0; height: 100%; width: 100%; overflow: hidden; pointer-events: none; z-index: -1;');
-				obj.__resizeElement__ = element;
-				obj.onload = objectLoad;
-				obj.type = 'text/html';
-				if (isIE) element.appendChild(obj);
-				obj.data = 'about:blank';
-				if (!isIE) element.appendChild(obj);
-			}
+	function removeResizeTrigger(element) {
+		if (element.__resizeTrigger__) {
+			if(element.__resizeTrigger__.parentNode === element) element.removeChild(element.__resizeTrigger__);
+			element.__resizeTrigger__ = null;
 		}
-		element.__resizeListeners__.push(fn);
-	};
-
-	window.removeResizeListener = function (element, fn) {
-		element.__resizeListeners__.splice(element.__resizeListeners__.indexOf(fn), 1);
-		if (!element.__resizeListeners__.length) {
-			if (attachEvent) element.detachEvent('onresize', resizeListener);
-			else {
-				// TODO: investigate contentDocument undefined errors
-				element.__resizeTrigger__.contentDocument.defaultView.removeEventListener('resize', resizeListener);
-				element.__resizeTrigger__ = !element.removeChild(element.__resizeTrigger__);
-			}
-		}
-	};
-
-
-
-
+	}
 
 	var scrollbarWidth = null;
 		
 	//Source: http://stackoverflow.com/questions/13382516/getting-scroll-bar-width-using-javascript
 	function getScrollbarWidth() {
+		// Known issue: scrollbar width changes on zoom on Firefox
 		if (scrollbarWidth) {
 			return scrollbarWidth;
 		}
@@ -191,10 +149,10 @@
 			this.observer.observe(this.scrollElement, styledScrollMutationConfig);
 		} else {
 			this.scrollElement.addEventListener('DOMSubtreeModified', this.requestScrollbarUpdate);
-			console.log('Mutation observer support not detected, falling back to mutation events. Please verify your browser is up to date.')
+			console.log('Mutation observer support not detected, falling back to mutation events. Please verify your browser is up to date.');
 		}
 		
-		addResizeListener(this.scrollElement, this.requestScrollbarUpdate);
+		addResizeTrigger(this.scrollElement, this.requestScrollbarUpdate);
 		
 		this.requestScrollbarUpdate();
 	}
@@ -233,10 +191,12 @@
 			this.isDestroyed = true;
 			
 			this.scrollbar.destroy();
+			
 			// TODO: Unsure if explicit observer disconnect and resize listener removal are necessary, no observed leaks without them
 			if (supportsMutationObserver) this.observer.disconnect();
 			else this.scrollElement.removeEventListener('DOMSubtreeModified', this.requestScrollbarUpdate);
-			removeResizeListener(this.scrollElement, this.requestScrollbarUpdate);
+			
+			removeResizeTrigger(this.scrollElement);
 		},
 		
 		on: function (type, fn) {
@@ -318,7 +278,7 @@
 			var scrollHeight = this.scrollElement.scrollHeight;
 			var clientHeight = this.scrollElement.clientHeight;
 			
-			if (clientHeight === scrollHeight) {
+			if (clientHeight >= scrollHeight - 1) {
 				if (this.wrapperStyle.visibility !== 'hidden') {
 					this.wrapperStyle.visibility = 'hidden';
 					if (isUsingWidthHack) this.scrollElement.style.width = '100%';
@@ -356,11 +316,11 @@
 				this.isDragged = false;
 			}
 			
-			this.thumbStyle.transform = 'translateY(' + this.getCurrentThumbTop() + 'px)';
+			this.thumbStyle[transformPrefixed] = 'translateY(' + this.getCurrentThumbTop() + 'px)';
 		},
 
 		start: function (e) {
-			this.lastMouseY = (e.touches ? e.touches[0] : e).pageY
+			this.lastMouseY = (e.touches ? e.touches[0] : e).pageY;
 
 			this.dragTopOffset = this.lastMouseY - this.getCurrentThumbTop();
 			
@@ -406,11 +366,11 @@
 
 		handleEvent: function (e) {
 			// Benchmarking showed if statement to have better performance on moves than switch statements or a map
-			if (moveEvents.indexOf(e.type) != -1) {
+			if (moveEvents.indexOf(e.type) !== -1) {
 				this.move(e);
-			} else if (startEvents.indexOf(e.type) != -1) {
+			} else if (startEvents.indexOf(e.type) !== -1) {
 				this.start(e);
-			} else if (endEvents.indexOf(e.type) != -1) {
+			} else if (endEvents.indexOf(e.type) !== -1) {
 				this.end(e);
 			}
 		}

@@ -5,8 +5,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Styled Scroll Demo</title>
-        <script type="text/javascript" src="../src/styled-scroll.js">
-</script>
+        
+        <script type="text/javascript" src="../src/styled-scroll.js"></script>
+        <link rel="stylesheet" type="text/css" href="../demos/styles.css">
+        
         <script type="text/javascript">
             function loaded() {
                 var header = document.getElementById('header');
@@ -29,18 +31,12 @@
                     
                 };
                 
-                for (var i = 0; i < 10; i++) {
+                for (var i = 0; i < 1; i++) {
                     header.click();
                 }
                 
                 var styledScroll = new StyledScroll(ul);
-                
-                // styledScroll.on('scrollStart', function () {
-                //     console.log('Scroll started.');
-                // });
-                // styledScroll.on('scrollEnd', function () {
-                //     console.log('Finished scrolling.');
-                // });
+                var styledScroll = new StyledScroll(document.getElementById('static-list'));
                 
                 /* Create a large number of StyledScrolls to check performance */
                 // for(var i = 0; i < 50; i++) {
@@ -54,18 +50,56 @@
                 // });
             }
         </script>
-        <link rel="stylesheet" type="text/css" href="../demos/styles.css">
     </head>
     
     <body onload="loaded()">
-        <button id="header">Add rows</button>
+        <div id='header'>
+            <button class="">Add rows</button>
+            <button class="">Add rows</button>
+        </div>
         <div id="wrapper">
             <ul id="elementToScroll">
                 <li>12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890</li>
             
             </ul>
         </div>
-        <button id="footer">Remove rows</button>
+        <div style='position: relative; width:400px; top: 150px; height:200px; left:50px; background: lavender; padding-left: 20px;'>
+            <ul id='static-list' style='position: absolute; width:600px; left:-100px;'>
+                <li>1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*()    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+                <li>5    
+            </ul>
+        </div>
+        <div id="footer">
+            <button class="">Remove rows</button>
+        </div>
     </body>
 
 </html>
+
+
+
+<!--
+                // styledScroll.on('scrollStart', function () {
+                //     console.log('Scroll started.');
+                // });
+                // styledScroll.on('scrollEnd', function () {
+                //     console.log('Finished scrolling.');
+                // });

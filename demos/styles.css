@@ -2,10 +2,6 @@
     box-sizing: border-box;
 }
 
-html {
-    -ms-touch-action: none;
-}
-
 body, ul, li {
     padding: 0;
     margin: 0;
@@ -13,50 +9,65 @@ body, ul, li {
 }
 
 body {
+    margin: 0 0 50px;
+}
+
+/*body {
     font-size: 12px;
     font-family: ubuntu, helvetica, arial;
+}*/
+
+#header, #wrapper, #footer {
+    position: absolute;
+    width: 100%;
+}
+
+ul {
+    list-style: none;
+}
+
+button {
+    margin: 4px 2px;
+    color: #333;
+    background-color: #fff;
+    border-color: #ccc;
+    padding: 6px 12px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+}
+
+button:hover {
+    color: #ddd;
+    background-color: black;
 }
 
 #header,
 #footer {
-    position: absolute;
-    height: 50px;
-    width: 100%;
-    left: 0;
+    height: 40px;
     z-index: 2;
-    color: #eee;
-    font-size: 20px;
-    text-align: center;
-    font-weight: bold;
-    line-height: 45px;
+    display: flex;
+    justify-content: center;
 }
 
 #header {
-    top: 0;
     background: #CD235C;
 }
 
 #footer {
     bottom: 0;
+    margin-top: -50px;
     background: #04A404;
 }
 
 #wrapper {
-    position: absolute;
-    z-index: 1;
-    top: 50px;
-    bottom: 50px;
-    left: 0;
-    width: 100%;
+    top: 40px;
+    bottom: 40px;
     background: #ccc;
     word-wrap: break-word;
 }
 
 #elementToScroll {
-    width:100%;
-    position: absolute;
     z-index: 1;
-    list-style: none;
     text-align: left;
 }
 
