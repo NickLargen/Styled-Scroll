@@ -254,9 +254,9 @@
 	}
 
 	function Scrollbar(styledScroll, element) {
-		this.wrapper = element;
-		this.wrapperStyle = this.wrapper.style;
-		this.thumb = this.wrapper.children[0];
+		this.track = element;
+		this.trackStyle = this.track.style;
+		this.thumb = this.track.children[0];
 		this.thumbStyle = this.thumb.style;
 		this.scrollElement = styledScroll.scrollElement;
 		this.styledScroll = styledScroll;
@@ -279,20 +279,20 @@
 			var clientHeight = this.scrollElement.clientHeight;
 			
 			if (clientHeight >= scrollHeight - 1) {
-				if (this.wrapperStyle.visibility !== 'hidden') {
-					this.wrapperStyle.visibility = 'hidden';
+				if (this.trackStyle.visibility !== 'hidden') {
+					this.trackStyle.visibility = 'hidden';
 					if (isUsingWidthHack) this.scrollElement.style.width = '100%';
 				}
 				return;
-			} else if (this.wrapperStyle.visibility !== 'visible') { 
-				this.wrapperStyle.visibility = 'visible';
+			} else if (this.trackStyle.visibility !== 'visible') { 
+				this.trackStyle.visibility = 'visible';
 				//Make the scrolling element larger than the containing element so that the scrollbar is hidden
 				if (isUsingWidthHack) this.scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px';
 			}
 			
-			var wrapperHeight = this.wrapper.clientHeight;
+			var trackHeight = this.track.clientHeight;
 			
-			var thumbHeight = wrapperHeight * clientHeight / scrollHeight;
+			var thumbHeight = trackHeight * clientHeight / scrollHeight;
 			//A quick benchmark showed Math.max performance to be worse than an if statement on IE11
 			if (thumbHeight < 20) {
 				thumbHeight = 20;
@@ -300,7 +300,7 @@
 			this.thumb.style.height = thumbHeight + 'px';
 			
 			//Available height for the thumb to scroll divided by available height for the element to scroll
-			this.scrollbarToElementRatio = (wrapperHeight - thumbHeight) / (scrollHeight - clientHeight);
+			this.scrollbarToElementRatio = (trackHeight - thumbHeight) / (scrollHeight - clientHeight);
 			
 			this.updateThumbPosition();
 		},
@@ -361,7 +361,7 @@
 				document.removeEventListener(eventName, self);
 			});
 
-			this.wrapper.parentNode.removeChild(this.wrapper);
+			this.track.parentNode.removeChild(this.track);
 		},
 
 		handleEvent: function (e) {
