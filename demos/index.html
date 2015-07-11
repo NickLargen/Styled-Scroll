@@ -39,9 +39,9 @@
                     addRows.click();
                 }
                 
-                var styledScroll = new StyledScroll(ul, { fillParent: true });
-                var styledScroll = new StyledScroll(document.getElementById('static-list'),{ fillParent: true });
-                var styledScroll = new StyledScroll(document.getElementById('border-content'));
+                var styledScroll = new StyledScroll(ul);
+                new StyledScroll(document.getElementById('static-list'));
+                new StyledScroll(document.getElementById('border-content'), {customDimensions: true});
                 
                 /* Create a large number of StyledScrolls to check performance */
                 // for(var i = 0; i < 50; i++) {

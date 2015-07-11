@@ -108,9 +108,9 @@ button:hover {
 #border-div {
     position: absolute; 
     width: 400px; 
-    top: 200px; 
+    top: 450px; 
     height: 300px; 
-    left: 600px; 
+    left: 100px; 
     background: lightskyblue; 
     padding: 20px;
     border-color: teal;
@@ -152,8 +152,8 @@ button:hover {
     background-clip: padding-box;
     border-radius:3px;
     cursor: pointer;
-    top: 10px;
-    bottom: 10px;
+    top: 0px;
+    bottom: 0px;
 	width: 10px;
 }
 

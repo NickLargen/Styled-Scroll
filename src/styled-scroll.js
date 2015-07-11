@@ -93,70 +93,65 @@
 	
 	var styledScrollMutationConfig = { attributes: true, childList: true, subtree: true };
 	// Whether or not scrollbars are being hidden by modifying element size (for browsers that don't support hiding scrollbars)
-	var isUsingWidthHack = false;
+	var isUsingWidthHack = undefined; 
 
 	function StyledScroll(scrollElement, options) {
 		this.scrollElement = scrollElement;
 		this.options = options || {};
 		
 		this.scrollElement.style.overflow = 'auto';
-		if (this.options.fillParent) this.scrollElement.style.height = '100%';
-		
-		this.scrollElement.classList.add('hide-scrollbar');
-
-		if ('-ms-overflow-style' in this.scrollElement.style) {
-			this.scrollElement.style.msOverflowStyle = 'none';
-		} else if (getScrollbarWidth() > 0) {
-			isUsingWidthHack = true;
-			// Prevent user from scrolling the scrollbar into view
-			this.scrollElement.parentNode.style.overflow = 'hidden';
+		if (!this.options.customDimensions) {
+			this.scrollElement.style.width = '100%';
+			this.scrollElement.style.height = '100%';
 		}
 		
-		// Create storage for events that can be registered
-		this.events = {};
+		if(isUsingWidthHack === undefined) isUsingWidthHack = getScrollbarWidth() > 0 && !('-ms-overflow-style' in this.scrollElement.style);
 		
-		// ----- SCROLLBAR HANDLING -----
-		this.initScrollbar();
-
-		var self = this;
-		var requestScrollbarUpdate = function () { 
-			self.refresh(); 
-		};
-		
-		this.scrollElement.addEventListener('scroll', function () { 
-			self.hasScrolledRecently = true;
-			self.requestUpdate();
-			if (!self.isScrolling) {
-				self.isScrolling = true;
-				self.triggerEvent('scrollStart');
-				
-				// Create a timer marks scrolling as ended if a scroll event has not occured within some timeout
-				var intervalId = setInterval(function checkIfScrolled() {
-					if (self.hasScrolledRecently) {
-						self.hasScrolledRecently = false;
-					} else {
-						clearInterval(intervalId);
-						self.isScrolling = false;
-						self.triggerEvent('scrollEnd');
-					}
-				}, 200);
-			}
-		});
-		
-		if (supportsMutationObserver) {
-			this.observer = new MutationObserver(requestScrollbarUpdate);
-			this.observer.observe(this.scrollElement, styledScrollMutationConfig);
-		} else {
-			this.scrollElement.addEventListener('DOMSubtreeModified', requestScrollbarUpdate);
-			console.log('Mutation observer support not detected, falling back to mutation events. Please verify your browser is up to date.');
+		if (this.options.customDimensions && isUsingWidthHack) {
+			// With custom dimensions the width cannot be changed to hide the scrollbar so just default to native scrolling (Firefox)
+			this.options.useNative = true;
 		}
 		
-		addResizeTrigger(this.scrollElement, requestScrollbarUpdate);
+		if (!this.options.useNative) {
+			this.initScrollbar();
+		}
+		
+		this.initEvents();
 	}
 
 	StyledScroll.prototype = {
 		
 		initScrollbar: function () {
+			var self = this;
+			// Disable native scrollbar
+			this.scrollElement.classList.add('hide-scrollbar');
+
+			if (isUsingWidthHack) {
+				// Prevent user from scrolling the scrollbar into view
+				this.scrollElement.parentNode.style.overflow = 'hidden';
+			} else if ('-ms-overflow-style' in this.scrollElement.style) {
+				this.scrollElement.style.msOverflowStyle = 'none';
+			}
+			
+			// Create a new scrollbar and update it whenever the viewport or the content changes
+			this.initScrollbarElements();
+
+			var requestScrollbarUpdate = function () {
+				self.refresh();
+			};
+		
+			if (supportsMutationObserver) {
+				this.observer = new MutationObserver(requestScrollbarUpdate);
+				this.observer.observe(this.scrollElement, styledScrollMutationConfig);
+			} else {
+				this.scrollElement.addEventListener('DOMSubtreeModified', requestScrollbarUpdate);
+				console.log('Mutation observer support not detected, falling back to mutation events. Please verify your browser is up to date.');
+			}
+
+			addResizeTrigger(this.scrollElement, requestScrollbarUpdate);
+		},
+		
+		initScrollbarElements: function () {
 			var track = createTrack();
 			
 			if (supportsEventConstructor) {
@@ -172,6 +167,32 @@
 			this.scrollbar = new Scrollbar(this, track);
 		},
 		
+		initEvents: function () {
+			var self = this;
+			// Create storage for events that can be registered
+			this.events = {};
+	
+			this.scrollElement.addEventListener('scroll', function () {
+				self.hasScrolledRecently = true;
+				self.requestUpdate();
+				if (!self.isScrolling) {
+					self.isScrolling = true;
+					self.triggerEvent('scrollStart');
+					
+					// Create a timer marks scrolling as ended if a scroll event has not occured within some timeout
+					var intervalId = setInterval(function checkIfScrolled() {
+						if (self.hasScrolledRecently) {
+							self.hasScrolledRecently = false;
+						} else {
+							clearInterval(intervalId);
+							self.isScrolling = false;
+							self.triggerEvent('scrollEnd');
+						}
+					}, 200);
+				}
+			});
+		},
+		
 		refresh: function () {
 			this.updateScrollbar = true;
 			this.requestUpdate(); 
@@ -179,7 +200,7 @@
 		
 		requestUpdate: function () {
 			// Do not allow stacked update requests
-			if (!this.isUpdateRequested) {
+			if (!this.isUpdateRequested && !this.options.useNative) {
 				this.isUpdateRequested = true;
 				var self = this;
 				requestAnimationFrame(function () { self.update(); });
@@ -195,6 +216,7 @@
 		},
 
 		destroy: function () { 
+			if (this.options.useNative) return;
 			if (this.isDestroyed) {
 				console.warn('Attempted to destroy an already destroyed Styled Scroll object, ignoring request.');
 				return;
@@ -257,6 +279,8 @@
 
 		thumb.className = 'styled-scroll-thumb';
 		thumb.style.position = 'relative';
+		// Thumb height calculations assume border-box
+		thumb.style.boxSizing = 'border-box';
 		
 		// Prevent invisible track from stealing mouse events.
 		track.style.pointerEvents = 'none';
@@ -328,23 +352,23 @@
 			var trackCompStyle = getComputedStyle(this.track);
 			var thumbCompStyle = getComputedStyle(this.thumb);
 			
-			if (this.styledScroll.options.fillParent) {
-				availableTrackHeight = this.track.clientHeight;
-			} else {
+			if (this.styledScroll.options.customDimensions) {
 				var trackTop = getStyleValue(trackCompStyle['top']),
 					trackBottom = getStyleValue(trackCompStyle['bottom']),
 					borderTop = getStyleValue(trackCompStyle['border-top-width']),
 					borderBottom = getStyleValue(trackCompStyle['border-bottom-width']);
-					
+
 				this.track.style.height = clientHeight - trackTop - trackBottom + 'px';
 				availableTrackHeight = clientHeight - trackTop - borderTop - trackBottom - borderBottom;
 			
 				// Translate the scrollbar from the right of the parent div to the right of the scrolled div
 				var scrollCompStyle = getComputedStyle(this.scrollElement);
 				var parentCompStyle = getComputedStyle(this.scrollElement.parentNode);
-				var rightOffset = getStyleValue(scrollCompStyle['border-right-width']) + getStyleValue(scrollCompStyle['margin-right']) + getStyleValue(parentCompStyle['padding-right'] );
+				var rightOffset = getStyleValue(scrollCompStyle['border-right-width']) + getStyleValue(scrollCompStyle['margin-right']) + getStyleValue(parentCompStyle['padding-right']);
 				var topOffset = getStyleValue(scrollCompStyle['border-top-width']) + getStyleValue(scrollCompStyle['margin-top']) + getStyleValue(parentCompStyle['padding-top']);
 				this.track.style[transformPrefixed] = 'translate(-' + rightOffset + 'px,' + topOffset + 'px)';
+			} else {
+				availableTrackHeight = this.track.clientHeight;
 			}
 			
 			availableTrackHeight -= getStyleValue(thumbCompStyle['top']) + getStyleValue(thumbCompStyle['bottom'])
