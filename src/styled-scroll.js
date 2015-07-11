@@ -37,12 +37,13 @@
 		resizeTrigger.setAttribute('style', 'position: absolute; top: 0; left: 0; height: 100%; width: 100%; border: none; pointer-events:none;');
 
 		resizeTrigger.onload = function () {
-			//TODO: Investigate why contentWindow was undefined/null on IE
-			if (resizeTrigger.contentWindow) resizeTrigger.contentWindow.onresize = callback;
-			else setTimeout(function () { 
-				if (resizeTrigger.contentWindow) resizeTrigger.contentWindow.onresize = callback;
-				else console.warn('Failed to attach resize trigger onto ' + element)
-			}, 200)
+			if (resizeTrigger.contentWindow) {
+				resizeTrigger.contentWindow.onresize = callback;
+			}
+			else {
+				console.warn('Failed to attach resize trigger onto element. The follow element will not have an accurate scrollbar when its viewport is resized.')
+				console.warn(element);
+			}
 		};
 		element.appendChild(resizeTrigger);
 		element.__resizeTrigger__ = element;
@@ -96,9 +97,10 @@
 
 	function StyledScroll(scrollElement, options) {
 		this.scrollElement = scrollElement;
+		this.options = options || {};
 		
-		this.scrollElement.style.height = '100%';
 		this.scrollElement.style.overflow = 'auto';
+		if (this.options.fillParent) this.scrollElement.style.height = '100%';
 		
 		this.scrollElement.classList.add('hide-scrollbar');
 
@@ -117,9 +119,8 @@
 		this.initScrollbar();
 
 		var self = this;
-		this.requestScrollbarUpdate = function () { 
-			self.requestUpdate(); 
-			self.updateScrollbar = true;
+		var requestScrollbarUpdate = function () { 
+			self.refresh(); 
 		};
 		
 		this.scrollElement.addEventListener('scroll', function () { 
@@ -143,16 +144,14 @@
 		});
 		
 		if (supportsMutationObserver) {
-			this.observer = new MutationObserver(this.requestScrollbarUpdate);
+			this.observer = new MutationObserver(requestScrollbarUpdate);
 			this.observer.observe(this.scrollElement, styledScrollMutationConfig);
 		} else {
-			this.scrollElement.addEventListener('DOMSubtreeModified', this.requestScrollbarUpdate);
+			this.scrollElement.addEventListener('DOMSubtreeModified', requestScrollbarUpdate);
 			console.log('Mutation observer support not detected, falling back to mutation events. Please verify your browser is up to date.');
 		}
 		
-		addResizeTrigger(this.scrollElement, this.requestScrollbarUpdate);
-		
-		this.requestScrollbarUpdate();
+		addResizeTrigger(this.scrollElement, requestScrollbarUpdate);
 	}
 
 	StyledScroll.prototype = {
@@ -171,6 +170,11 @@
 			this.scrollElement.parentNode.appendChild(track);
 			
 			this.scrollbar = new Scrollbar(this, track);
+		},
+		
+		refresh: function () {
+			this.updateScrollbar = true;
+			this.requestUpdate(); 
 		},
 		
 		requestUpdate: function () {
@@ -249,9 +253,10 @@
 			thumb = document.createElement('div');
 
 		track.className = 'styled-scroll-track';
+		track.style.position = 'absolute';
+
 		thumb.className = 'styled-scroll-thumb';
-		
-		thumb.style.boxSizing = 'border-box';
+		thumb.style.position = 'relative';
 		
 		// Prevent invisible track from stealing mouse events.
 		track.style.pointerEvents = 'none';
@@ -281,6 +286,10 @@
 		});
 	}
 	
+	function getStyleValue(style) {
+		return parseFloat(style) || 0;
+	}
+	
 	Scrollbar.prototype = {
 		updateScrollbar: function () {
 			var scrollHeight = this.scrollElement.scrollHeight;
@@ -298,9 +307,9 @@
 				if (isUsingWidthHack) this.scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px';
 			}
 			
-			var trackHeight = this.track.offsetHeight;
+			var availableTrackHeight = this.calculateAvailableTrackHeight(clientHeight); 
 			
-			var thumbHeight = trackHeight * clientHeight / scrollHeight;
+			var thumbHeight = availableTrackHeight * clientHeight / scrollHeight;
 			//A quick benchmark showed Math.max performance to be worse than an if statement on IE11
 			if (thumbHeight < 20) {
 				thumbHeight = 20;
@@ -308,9 +317,40 @@
 			this.thumb.style.height = thumbHeight + 'px';
 			
 			//Available height for the thumb to scroll divided by available height for the element to scroll
-			this.scrollbarToElementRatio = (trackHeight - thumbHeight) / (scrollHeight - clientHeight);
+			this.scrollbarToElementRatio = (availableTrackHeight - thumbHeight) / (scrollHeight - clientHeight);
 			
 			this.updateThumbPosition();
+		},
+		
+		// The height the thumb is allowed to occupy
+		calculateAvailableTrackHeight: function (clientHeight) {
+			var availableTrackHeight;
+			var trackCompStyle = getComputedStyle(this.track);
+			var thumbCompStyle = getComputedStyle(this.thumb);
+			
+			if (this.styledScroll.options.fillParent) {
+				availableTrackHeight = this.track.clientHeight;
+			} else {
+				var trackTop = getStyleValue(trackCompStyle['top']),
+					trackBottom = getStyleValue(trackCompStyle['bottom']),
+					borderTop = getStyleValue(trackCompStyle['border-top-width']),
+					borderBottom = getStyleValue(trackCompStyle['border-bottom-width']);
+					
+				this.track.style.height = clientHeight - trackTop - trackBottom + 'px';
+				availableTrackHeight = clientHeight - trackTop - borderTop - trackBottom - borderBottom;
+			
+				// Translate the scrollbar from the right of the parent div to the right of the scrolled div
+				var scrollCompStyle = getComputedStyle(this.scrollElement);
+				var parentCompStyle = getComputedStyle(this.scrollElement.parentNode);
+				var rightOffset = getStyleValue(scrollCompStyle['border-right-width']) + getStyleValue(scrollCompStyle['margin-right']) + getStyleValue(parentCompStyle['padding-right'] );
+				var topOffset = getStyleValue(scrollCompStyle['border-top-width']) + getStyleValue(scrollCompStyle['margin-top']) + getStyleValue(parentCompStyle['padding-top']);
+				this.track.style[transformPrefixed] = 'translate(-' + rightOffset + 'px,' + topOffset + 'px)';
+			}
+			
+			availableTrackHeight -= getStyleValue(thumbCompStyle['top']) + getStyleValue(thumbCompStyle['bottom'])
+			availableTrackHeight -= getStyleValue(trackCompStyle['padding-top']) + getStyleValue(trackCompStyle['padding-bottom'])
+			
+			return availableTrackHeight;
 		},
 		
 		// Calculate the percentage that the element is currently scrolled and multiply it by the length the thumb can scroll

@@ -96,20 +96,36 @@ button:hover {
     border-style: dashed;
     border-width: 2px 4px 6px 8px;
 }
-    
-
 
 #static-list {
-    /*overflow: auto;*/
-    /*border-color: goldenrod;
-    border-style: solid;
-    border-width: 5px 13px 6px 8px;*/
     padding: 40px;
-    /*margin: 15px 20px 25px 10px;*/
+    height: 100%;
 }
 
 
 
+
+#border-div {
+    position: absolute; 
+    width: 400px; 
+    top: 200px; 
+    height: 300px; 
+    left: 600px; 
+    background: lightskyblue; 
+    padding: 20px;
+    border-color: teal;
+    border-style: groove;
+    border-width: 2px 2px 6px 6px;
+}
+
+#border-content {
+    border-color: goldenrod;
+    border-style: solid;
+    border-width: 5px 13px 6px 8px;
+    height: 80%;
+    padding: 30px;
+    margin: -5px 20px 0 10px;
+}
 
 
 
@@ -119,23 +135,26 @@ button:hover {
 }
 
 .styled-scroll-track {
-    position: absolute; 
-    width: 7px; 
-    top: 5px;
+    top: 2px;
     right: 0;
-    bottom: 5px;
-    padding: 0 1px;
-    /*box-sizing: border-box;*/
+    bottom: 2px;
+    
+    /*width: 21px; */
+    /*padding: 0px 2px;*/
+    box-sizing: border-box;
+    border: 7px double seagreen;
 }
 
 .styled-scroll-thumb {
     z-index: 100;
     background: rgba(0,0,0,0.5);
     border:1px solid rgba(255,255,255,0.9);
-    background-clip:padding-box;
+    background-clip: padding-box;
     border-radius:3px;
     cursor: pointer;
-	/*width: 100%;*/
+    top: 10px;
+    bottom: 10px;
+	width: 10px;
 }
 
 .styled-scroll-thumb:hover { 
