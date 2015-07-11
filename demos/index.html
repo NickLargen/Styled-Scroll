@@ -11,11 +11,10 @@
         
         <script type="text/javascript">
             function loaded() {
-                var header = document.getElementById('header');
                 var ul = document.getElementById('elementToScroll');
-                var footer = document.getElementById('footer');
-    
-                header.onclick = function () {
+        
+                var addRows = document.getElementById('add-rows');
+                addRows.onclick = function () {
                     for(var i = 0; i < 10; i++) {
                         var node = document.createElement("LI");
                         var textnode = document.createTextNode(ul.childElementCount);
@@ -23,16 +22,21 @@
                         ul.appendChild(node);
                     }
                 };
-                footer.onclick = function () {
+                
+                document.getElementById('add-content').onclick = function () {
+                    ul.firstElementChild.textContent += 'qwertyuiop asdfghjkl zxcvbnm qwertyuiop asdfghjkl zxcvbnm qwertyuiop asdfghjkl zxcvbnm '
+                };;
+                
+                document.getElementById('remove-rows').onclick = function () {
                     for(var i = 0; i < 1; i++) {
                         var nodes = document.querySelectorAll('#elementToScroll li');
                         ul.removeChild(nodes[nodes.length  - 1]);
                     }
                     
                 };
-                
+    
                 for (var i = 0; i < 1; i++) {
-                    header.click();
+                    addRows.click();
                 }
                 
                 var styledScroll = new StyledScroll(ul);
@@ -54,8 +58,8 @@
     
     <body onload="loaded()">
         <div id='header'>
-            <button class="">Add rows</button>
-            <button class="">Add rows</button>
+            <button id="add-rows">Add rows</button>
+            <button id="add-content">Add content</button>
         </div>
         <div id="wrapper">
             <ul id="elementToScroll">
@@ -63,32 +67,17 @@
             
             </ul>
         </div>
-        <div style='position: relative; width:400px; top: 150px; height:200px; left:50px; background: lavender; padding-left: 20px;'>
-            <ul id='static-list' style='position: absolute; width:600px; left:-100px;'>
-                <li>1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*() 1234567890!@#$%^&*()    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
-                <li>5    
+        <div id='static-div' style=''>
+            <ul id='static-list' style=' '>
+                Jumping spiders are among the easiest to distinguish from similar spider families because of the shape of the cephalothorax and their eye patterns. The families closest to Salticidae in general appearance are the Corinnidae (distinguished also by prominent spines on the back four legs), the Oxyopidae (the lynx spiders, distinguished by very prominent spines on all legs), and the Thomisidae (the crab spiders, distinguished by their front four legs, which are very long and powerful). None of these families however, has eyes that resemble those of the Salticidae. Conversely, the legs of jumping spiders are not covered with any very prominent spines. Their front four legs generally are larger than the hind four, but not as dramatically so as those of the crab spiders, nor are they held in the outstretched-arms attitude characteristic of the Thomisidae.[4] In spite of the length of their front legs, Salticidae depend on their rear legs for jumping. The generally larger front legs are used partly to assist in grasping prey,[5] and in some species, the front legs and pedipalps are used in species-recognition signalling.
+The jumping spiders, unlike the other families, have faces that are roughly rectangular surfaces perpendicular to their direction of motion. In effect this means that their forward-looking, anterior eyes are on "flat faces", as shown in the photographs. Their eye pattern is the clearest single identifying characteristic. They have eight eyes, as illustrated.[4][5] Most diagnostic are the front row of four eyes, in which the anterior median pair are more dramatically prominent than any other spider eyes apart from the posterior median eyes of the Deinopidae. There is, however, a radical functional difference between the major (AME) eyes of Salticidae and the major (PME) eyes of the Deinopidae; the large posterior eyes of Deinopidae are adapted mainly to vision in dim light, whereas the large anterior eyes of Salticidae are adapted to detailed, three-dimensional vision for purposes of estimating the range, direction, and nature of potential prey, permitting the spider to direct its attacking leaps with great precision. The anterior lateral eyes, though large, are smaller than the AME and provide a wider forward field of vision.
+The rear row of four eyes may be described as strongly bent, or as being rearranged into two rows, with two large posterior lateral eyes furthest back. They serve for lateral vision. The posterior median eyes also have been shifted out laterally, almost as far as the posterior lateral eyes. They are usually much smaller than the posterior lateral eyes and there is doubt about whether they are at all functional in many species.
+Jumping spiders range in size from a body length of 1 to 22 mm.[4]
+In addition to using their silk for safety lines while jumping, they also build silken "pup tents", where they shelter from bad weather and sleep at night. They molt within these shelters, build and store egg cases within them, and also spend the winter in them.[6]
             </ul>
         </div>
         <div id="footer">
-            <button class="">Remove rows</button>
+            <button id="remove-rows">Remove rows</button>
         </div>
     </body>
 

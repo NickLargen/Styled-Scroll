@@ -82,22 +82,50 @@ button:hover {
     font-size: 14px;
 }
 
+
+
+#static-div {
+    position: absolute; 
+    width:400px; 
+    top: 150px; 
+    height:250px; 
+    left: 0px; 
+    background: lavender; 
+    /*padding: 20px;*/
+    border-color: #CD235C;
+    border-style: dashed;
+    border-width: 2px 4px 6px 8px;
+}
+    
+
+
+#static-list {
+    /*overflow: auto;*/
+    /*border-color: goldenrod;
+    border-style: solid;
+    border-width: 5px 13px 6px 8px;*/
+    padding: 40px;
+    /*margin: 15px 20px 25px 10px;*/
+}
+
+
+
+
+
+
 /* styled-scroll scrollbars*/
-.hide-scrollbar ::-webkit-scrollbar {
+.hide-scrollbar::-webkit-scrollbar {
     display: none;
 }
 
-.styled-scroll-vertical-scrollbar {
+.styled-scroll-track {
     position: absolute; 
-    z-index: 100; 
     width: 7px; 
-    bottom: 2px; 
-    top: 2px; 
-    right: 1px; 
-}
-
-.styled-scroll-vertical-scrollbar.styled-scroll-both-scrollbars {
-	bottom: 0;
+    top: 5px;
+    right: 0;
+    bottom: 5px;
+    padding: 0 1px;
+    /*box-sizing: border-box;*/
 }
 
 .styled-scroll-thumb {
@@ -107,12 +135,10 @@ button:hover {
     background-clip:padding-box;
     border-radius:3px;
     cursor: pointer;
+	/*width: 100%;*/
 }
 
 .styled-scroll-thumb:hover { 
     border: 0;
 }
 
-.styled-scroll-vertical-scrollbar .styled-scroll-thumb {
-	width: 100%;
-}

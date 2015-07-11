@@ -12,6 +12,7 @@
 	var transformPrefixed = 'transform' in document.createElement('div').style ? 'transform' : 'webkitTransform';
 
 	var supportsMutationObserver = window.MutationObserver !== undefined;
+	var supportsEventConstructor = typeof window.Event == "function";
 
 	/** Detect what input events are supported in order to register listeners.
 	 * Pointer events include mouse and touch events so listening to everything can cause events to be received twice.
@@ -30,9 +31,10 @@
 	var endEvents = supportsPointer ? [pointerUp, pointerCancel] : ['touchend', 'mouseup', 'touchcancel', 'mousecancel'];
 
 	function addResizeTrigger(element, callback) {
-		// Create an element that supports resize events with the same height as the provided element
+		// Create an element that supports resize events with the same height  and width as the provided element
+		// Changes to width need to be listened to because child elements may change height as their width changes
 		var resizeTrigger = document.createElement('iframe');
-		resizeTrigger.setAttribute('style', 'position: absolute; top: 0; left: 0; height: 100%; width: 0; border: none;');
+		resizeTrigger.setAttribute('style', 'position: absolute; top: 0; left: 0; height: 100%; width: 100%; border: none; pointer-events:none;');
 
 		resizeTrigger.onload = function () {
 			//TODO: Investigate why contentWindow was undefined/null on IE
@@ -66,9 +68,9 @@
 		outer.style.visibility = "hidden";
 		outer.style.width = "100px";
 		outer.style.msOverflowStyle = "scrollbar"; // needed for WinJS apps
+		outer.classList.add('hide-scrollbar');
 	    
 		// Add hide-scrollbar class to compute width properly if it is used for removing scrollbars via css
-		document.body.classList.add('hide-scrollbar');
 		document.body.appendChild(outer);
 
 		var widthNoScroll = outer.offsetWidth;
@@ -84,7 +86,6 @@
 	    
 		// remove divs
 		outer.parentNode.removeChild(outer);
-		document.body.classList.remove('hide-scrollbar');
 
 		return scrollbarWidth = widthNoScroll - widthWithScroll;
 	};
@@ -95,21 +96,18 @@
 
 	function StyledScroll(scrollElement, options) {
 		this.scrollElement = scrollElement;
-		this.scrollElementStyle = this.scrollElement.style;
-		this.parent = scrollElement.parentNode;
 		
-		this.scrollElementStyle.height = '100%';
-		this.scrollElementStyle.maxHeight = 'inherit';
-		this.scrollElementStyle.overflow = 'auto';
+		this.scrollElement.style.height = '100%';
+		this.scrollElement.style.overflow = 'auto';
+		
+		this.scrollElement.classList.add('hide-scrollbar');
 
-		this.parent.classList.add('hide-scrollbar');
-
-		if ('-ms-overflow-style' in this.scrollElementStyle) {
-			this.scrollElementStyle.msOverflowStyle = 'none';
+		if ('-ms-overflow-style' in this.scrollElement.style) {
+			this.scrollElement.style.msOverflowStyle = 'none';
 		} else if (getScrollbarWidth() > 0) {
 			isUsingWidthHack = true;
-			//Prevent user from scrolling the scrollbar into view
-			this.parent.style.overflow = 'hidden';
+			// Prevent user from scrolling the scrollbar into view
+			this.scrollElement.parentNode.style.overflow = 'hidden';
 		}
 		
 		// Create storage for events that can be registered
@@ -160,10 +158,19 @@
 	StyledScroll.prototype = {
 		
 		initScrollbar: function () {
-			var scrollbarDiv = createScrollbarElement();
-			this.parent.appendChild(scrollbarDiv);
+			var track = createTrack();
 			
-			this.scrollbar = new Scrollbar(this, scrollbarDiv);
+			if (supportsEventConstructor) {
+				var wheelTarget = this.scrollElement;
+				track.addEventListener('wheel', function (event) {
+					var clone = new WheelEvent(event.type, event);
+					wheelTarget.dispatchEvent(clone);
+				});
+			}
+  
+			this.scrollElement.parentNode.appendChild(track);
+			
+			this.scrollbar = new Scrollbar(this, track);
 		},
 		
 		requestUpdate: function () {
@@ -237,25 +244,26 @@
 		},
 	};
 
-	function createScrollbarElement() {
-		var scrollbar = document.createElement('div'),
+	function createTrack() {
+		var track = document.createElement('div'),
 			thumb = document.createElement('div');
 
+		track.className = 'styled-scroll-track';
 		thumb.className = 'styled-scroll-thumb';
-		//Prevent users from overriding styles that break functionality
+		
 		thumb.style.boxSizing = 'border-box';
-		thumb.style.margin = '0px';
+		
+		// Prevent invisible track from stealing mouse events.
+		track.style.pointerEvents = 'none';
+		thumb.style.pointerEvents = 'auto';
 
-		scrollbar.className = 'styled-scroll-vertical-scrollbar';
+		track.appendChild(thumb);
 
-		scrollbar.appendChild(thumb);
-
-		return scrollbar;
+		return track;
 	}
 
-	function Scrollbar(styledScroll, element) {
-		this.track = element;
-		this.trackStyle = this.track.style;
+	function Scrollbar(styledScroll, track) {
+		this.track = track;
 		this.thumb = this.track.children[0];
 		this.thumbStyle = this.thumb.style;
 		this.scrollElement = styledScroll.scrollElement;
@@ -279,18 +287,18 @@
 			var clientHeight = this.scrollElement.clientHeight;
 			
 			if (clientHeight >= scrollHeight - 1) {
-				if (this.trackStyle.visibility !== 'hidden') {
-					this.trackStyle.visibility = 'hidden';
+				if (this.track.style.visibility !== 'hidden') {
+					this.track.style.visibility = 'hidden';
 					if (isUsingWidthHack) this.scrollElement.style.width = '100%';
 				}
 				return;
-			} else if (this.trackStyle.visibility !== 'visible') { 
-				this.trackStyle.visibility = 'visible';
+			} else if (this.track.style.visibility !== 'visible') { 
+				this.track.style.visibility = 'visible';
 				//Make the scrolling element larger than the containing element so that the scrollbar is hidden
 				if (isUsingWidthHack) this.scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px';
 			}
 			
-			var trackHeight = this.track.clientHeight;
+			var trackHeight = this.track.offsetHeight;
 			
 			var thumbHeight = trackHeight * clientHeight / scrollHeight;
 			//A quick benchmark showed Math.max performance to be worse than an if statement on IE11
