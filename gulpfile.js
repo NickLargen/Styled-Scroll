@@ -3,6 +3,7 @@
 var projectName = 'Styled Scroll';
 
 var gulp = require('gulp');
+var $ = require('gulp-load-plugins')();
 var exec = require('child_process').exec;
 var browserSync = require("browser-sync").create(projectName);
 var reload = browserSync.reload;
@@ -29,3 +30,17 @@ gulp.task('serve', function () {
 });
 
 gulp.task('default', ['serve']);
+
+// Lint JavaScript
+gulp.task('jshint', function () {
+    return gulp.src('src/**.js')
+        .pipe(reload({ stream: true, once: true }))
+        .pipe($.jshint())
+        .pipe($.jshint.reporter('jshint-stylish'));
+});
+
+gulp.task('minify', function() {
+  return gulp.src('src/**.js')
+    .pipe($.uglify())
+    .pipe(gulp.dest('dist'));
+});

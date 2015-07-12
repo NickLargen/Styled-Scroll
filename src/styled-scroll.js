@@ -41,7 +41,7 @@
 				resizeTrigger.contentWindow.onresize = callback;
 			}
 			else {
-				console.warn('Failed to attach resize trigger onto element. The follow element will not have an accurate scrollbar when its viewport is resized.')
+				console.warn('Failed to attach resize trigger onto element. The follow element will not have an accurate scrollbar when its viewport is resized.');
 				console.warn(element);
 			}
 		};
@@ -88,12 +88,13 @@
 		// remove divs
 		outer.parentNode.removeChild(outer);
 
-		return scrollbarWidth = widthNoScroll - widthWithScroll;
-	};
+		scrollbarWidth = widthNoScroll - widthWithScroll;
+		return scrollbarWidth;
+	}
 	
 	var styledScrollMutationConfig = { attributes: true, childList: true, subtree: true };
 	// Whether or not scrollbars are being hidden by modifying element size (for browsers that don't support hiding scrollbars)
-	var isUsingWidthHack = undefined; 
+	var isUsingWidthHack; 
 
 	function StyledScroll(scrollElement, options) {
 		this.scrollElement = scrollElement;
@@ -258,14 +259,14 @@
 			if ( !numFunctions ) {
 				return;
 			}
-	
+
 			var functionArgs = new Array(arguments.length - 1);
-			for(var i = 1; i < arguments.length; i++) {
-			    functionArgs[i - 1] = arguments[i];
+			for(var argIndex = 1; argIndex < arguments.length; argIndex++) {
+			    functionArgs[argIndex - 1] = arguments[argIndex];
 			}
 		
-			for (i = 0 ; i < numFunctions; i++ ) {
-				eventFunctions[i].apply(this, functionArgs);
+			for (var funIndex = 0 ; funIndex < numFunctions; funIndex++ ) {
+				eventFunctions[funIndex].apply(this, functionArgs);
 			}
 		},
 	};
@@ -353,10 +354,10 @@
 			var thumbCompStyle = getComputedStyle(this.thumb);
 			
 			if (this.styledScroll.options.customDimensions) {
-				var trackTop = getStyleValue(trackCompStyle['top']),
-					trackBottom = getStyleValue(trackCompStyle['bottom']),
-					borderTop = getStyleValue(trackCompStyle['border-top-width']),
-					borderBottom = getStyleValue(trackCompStyle['border-bottom-width']);
+				var trackTop = getStyleValue(trackCompStyle.top),
+					trackBottom = getStyleValue(trackCompStyle.bottom),
+					borderTop = getStyleValue(trackCompStyle.borderTopWidth),
+					borderBottom = getStyleValue(trackCompStyle.borderBottomWidth);
 
 				this.track.style.height = clientHeight - trackTop - trackBottom + 'px';
 				availableTrackHeight = clientHeight - trackTop - borderTop - trackBottom - borderBottom;
@@ -364,15 +365,15 @@
 				// Translate the scrollbar from the right of the parent div to the right of the scrolled div
 				var scrollCompStyle = getComputedStyle(this.scrollElement);
 				var parentCompStyle = getComputedStyle(this.scrollElement.parentNode);
-				var rightOffset = getStyleValue(scrollCompStyle['border-right-width']) + getStyleValue(scrollCompStyle['margin-right']) + getStyleValue(parentCompStyle['padding-right']);
-				var topOffset = getStyleValue(scrollCompStyle['border-top-width']) + getStyleValue(scrollCompStyle['margin-top']) + getStyleValue(parentCompStyle['padding-top']);
+				var rightOffset = getStyleValue(scrollCompStyle.borderRightWidth) + getStyleValue(scrollCompStyle.marginRight) + getStyleValue(parentCompStyle.paddingRight);
+				var topOffset = getStyleValue(scrollCompStyle.borderTopWidth) + getStyleValue(scrollCompStyle.marginTop) + getStyleValue(parentCompStyle.paddingTop);
 				this.track.style[transformPrefixed] = 'translate(-' + rightOffset + 'px,' + topOffset + 'px)';
 			} else {
 				availableTrackHeight = this.track.clientHeight;
 			}
 			
-			availableTrackHeight -= getStyleValue(thumbCompStyle['top']) + getStyleValue(thumbCompStyle['bottom'])
-			availableTrackHeight -= getStyleValue(trackCompStyle['padding-top']) + getStyleValue(trackCompStyle['padding-bottom'])
+			availableTrackHeight -= getStyleValue(thumbCompStyle.top) + getStyleValue(thumbCompStyle.bottom);
+			availableTrackHeight -= getStyleValue(trackCompStyle.paddingTop) + getStyleValue(trackCompStyle.paddingBottom);
 			
 			return availableTrackHeight;
 		},
@@ -416,7 +417,7 @@
 			e.stopPropagation();
 		},
 		
-		end: function (e) {
+		end: function () {
 			var self = this;
 			moveEvents.forEach(function (eventName) {
 				document.removeEventListener(eventName, self);
@@ -447,7 +448,6 @@
 			}
 		}
 	};
-
 
 	if (typeof module != 'undefined' && module.exports) {
 		module.exports = StyledScroll;
