@@ -30,6 +30,8 @@ gulp.task('serve', function () {
 });
 
 gulp.task('default', ['serve']);
+gulp.task('build', ['jshint', 'minify']);
+
 
 // Lint JavaScript
 gulp.task('jshint', function () {
@@ -40,7 +42,15 @@ gulp.task('jshint', function () {
 });
 
 gulp.task('minify', function() {
-  return gulp.src('src/**.js')
-    .pipe($.uglify())
-    .pipe(gulp.dest('dist'));
+    return gulp.src('src/**.js')
+        .pipe($.size({ title: 'Default' }))
+        .pipe($.uglify())
+        .pipe($.rename({
+            extname: '.min.js'
+        }))
+        .pipe($.size({ title: 'Minified' }))
+        .pipe(gulp.dest('dist'))
+        .pipe($.gzip())
+        .pipe($.size({ title: 'Gzipped' }))
+        .pipe(gulp.dest('dist'));
 });

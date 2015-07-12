@@ -129,13 +129,15 @@
 
 			if (isUsingWidthHack) {
 				// Prevent user from scrolling the scrollbar into view
-				this.scrollElement.parentNode.style.overflow = 'hidden';
+				this.scrollElement.offsetParent.style.overflow = 'hidden';
 			} else if ('-ms-overflow-style' in this.scrollElement.style) {
 				this.scrollElement.style.msOverflowStyle = 'none';
 			}
 			
 			// Create a new scrollbar and update it whenever the viewport or the content changes
-			this.initScrollbarElements();
+			this.createTrack();
+			this.scrollElement.parentNode.appendChild(this.track);
+			this.scrollbar = new Scrollbar(this, this.track);
 
 			var requestScrollbarUpdate = function () {
 				self.refresh();
@@ -151,21 +153,32 @@
 
 			addResizeTrigger(this.scrollElement, requestScrollbarUpdate);
 		},
-		
-		initScrollbarElements: function () {
-			var track = createTrack();
+
+		createTrack: function () {
+			this.track = document.createElement('div');
+			this.thumb = document.createElement('div');
+	
+			this.track.className = 'styled-scroll-track';
+			this.track.style.position = 'absolute';
+	
+			this.thumb.className = 'styled-scroll-thumb';
+			this.thumb.style.position = 'relative';
+			// Thumb height calculations assume border-box
+			this.thumb.style.boxSizing = 'border-box';
 			
+			// Prevent invisible track from stealing mouse events.
+			this.track.style.pointerEvents = 'none';
+			this.thumb.style.pointerEvents = 'auto';
+	
 			if (supportsEventConstructor) {
 				var wheelTarget = this.scrollElement;
-				track.addEventListener('wheel', function (event) {
+				this.track.addEventListener('wheel', function (event) {
 					var clone = new WheelEvent(event.type, event);
 					wheelTarget.dispatchEvent(clone);
 				});
 			}
-  
-			this.scrollElement.parentNode.appendChild(track);
 			
-			this.scrollbar = new Scrollbar(this, track);
+			this.track.appendChild(this.thumb);
 		},
 		
 		initEvents: function () {
@@ -271,27 +284,6 @@
 		},
 	};
 
-	function createTrack() {
-		var track = document.createElement('div'),
-			thumb = document.createElement('div');
-
-		track.className = 'styled-scroll-track';
-		track.style.position = 'absolute';
-
-		thumb.className = 'styled-scroll-thumb';
-		thumb.style.position = 'relative';
-		// Thumb height calculations assume border-box
-		thumb.style.boxSizing = 'border-box';
-		
-		// Prevent invisible track from stealing mouse events.
-		track.style.pointerEvents = 'none';
-		thumb.style.pointerEvents = 'auto';
-
-		track.appendChild(thumb);
-
-		return track;
-	}
-
 	function Scrollbar(styledScroll, track) {
 		this.track = track;
 		this.thumb = this.track.children[0];
@@ -364,7 +356,7 @@
 			
 				// Translate the scrollbar from the right of the parent div to the right of the scrolled div
 				var scrollCompStyle = getComputedStyle(this.scrollElement);
-				var parentCompStyle = getComputedStyle(this.scrollElement.parentNode);
+				var parentCompStyle = getComputedStyle(this.scrollElement.offsetParent);
 				var rightOffset = getStyleValue(scrollCompStyle.borderRightWidth) + getStyleValue(scrollCompStyle.marginRight) + getStyleValue(parentCompStyle.paddingRight);
 				var topOffset = getStyleValue(scrollCompStyle.borderTopWidth) + getStyleValue(scrollCompStyle.marginTop) + getStyleValue(parentCompStyle.paddingTop);
 				this.track.style[transformPrefixed] = 'translate(-' + rightOffset + 'px,' + topOffset + 'px)';
