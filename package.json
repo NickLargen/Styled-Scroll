@@ -1,6 +1,6 @@
 {
   "name": "styled-scroll",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Custom scrollbars with native performance.",
   "main": "gulpfile.js",
   "repository": {
@@ -13,7 +13,7 @@
     "scrollbar"
   ],
   "author": "Nick Largen",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/NickLargen/Styled-Scroll/issues"
   },

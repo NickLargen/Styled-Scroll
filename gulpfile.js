@@ -44,7 +44,7 @@ gulp.task('jshint', function () {
 gulp.task('minify', function() {
     return gulp.src('src/**.js')
         .pipe($.size({ title: 'Default' }))
-        .pipe($.uglify())
+        .pipe($.uglify({ compress: { drop_console: true } }))
         .pipe($.rename({
             extname: '.min.js'
         }))

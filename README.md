@@ -3,13 +3,13 @@ Styled Scroll provides an overlayed vertical scrollbar for overflowing elements,
 
 ## Usage
 Standard Styled Scroll usage requires the scrollable content to have 100% the width and height of its parent:
-```
-<div id='viewport'>
-    <div id='content'>
-        ... content ...
+ 
+    <div id='viewport'>
+        <div id='content'>
+            ... content ...
+        </div>
     </div>
-</div>
-```
+    
 Then all you have to do is create a new StyledScroll object:
 
     var styledScroll = new StyledScroll(document.getElementById('content'));
@@ -24,31 +24,60 @@ The scrollbar will automatically update its dimensions and position with any cha
 
     styledScroll.refresh();
 
-##### Styling
-Styled Scroll objects contain references to two divs that represent the scrollbar. The _track_ is the region that the scrollbar overlays and the _thumb_ is the indicator or handle that can be moved along the track in order to scroll. In order for them to appear you must specify their appearance in your css. For example, if you want something similar to Chrome's overlayed scroll bars you would use:
-```
-.styled-scroll-track {
-    top: 0;
-    right: 0;
-    bottom: 0;
+#### CSS
+When Styled Scroll is applied to an element it adds the 'hide-scrollbar' class. Include  the following css in order to properly hide the default scrollbar on webkit based browsers (Chrome and Safari).
+
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
     
-    width: 10px; 
-    box-sizing: border-box;
-}
+Styled Scroll objects contain references to two divs that represent the scrollbar. The _track_ is the region that the scrollbar overlays and the _thumb_ is the indicator or handle that can be moved along the track in order to scroll. In order for them to appear you must specify their appearance. The minimal css must specify the position and dimensions of the track and an appearance for the thumb:
+  
+    .styled-scroll-track {
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 12px; 
+    }
+    
+    .styled-scroll-thumb {
+        background: darkolivegreen;
+    }  
+    
+###### Styling
+You can apply any styles that you want to customize the appearance. For example Chrome's overlayed scrollbar can be approximated by:
 
-.styled-scroll-thumb {
-    background: rgba(0,0,0,0.5);
-    border:1px solid rgba(0,0,0,0.42);
-    background-clip: padding-box;
-    border-radius: .5px;
-}
+    .styled-scroll-track {
+        top: 0;
+        right: 0;
+        bottom: 0;
+        
+        width: 10px; 
+        box-sizing: border-box;
+    }
+    
+    .styled-scroll-thumb {
+        background: rgba(0,0,0,0.5);
+        border:1px solid rgba(0,0,0,0.42);
+        background-clip: padding-box;
+        border-radius: .5px;
+    }
+    
+    .styled-scroll-thumb:hover { 
+        background: rgba(0,0,0,0.64);
+    }
+    
+Important note: avoid padding on the thumb or margins on either the thumb or track. Use top/right/bottom/left to change their location.
 
-.styled-scroll-thumb:hover { 
-    background: rgba(0,0,0,0.64);
-}
-```
-License (MIT)
-=====================
+## Browser Compatability
+
+Styled Scroll is tested to work on the latest versions of Chrome, Firefox, Safari, and IE 10+ on both desktop and mobile devices. If a browser lacks necessary features it will simply revert to the native scrollbar.
+
+## Versioning
+
+Styled Scroll is maintained under [the Semantic Versioning guidelines](http://semver.org/).
+
+## License (MIT)
 
 Copyright (c) 2015 Nick Largen
 

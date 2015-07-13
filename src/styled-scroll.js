@@ -8,9 +8,18 @@
 		window.msRequestAnimationFrame ||
 		function (callback) { window.setTimeout(callback, 1000 / 60); };
 		
+	var testDiv = document.createElement('div');
+	var transformPrefixed, isSupportedBrowser = testDiv.classList !== undefined;
 	// webkitTransform is the only prefix we care about since IE9 is not supported
-	var transformPrefixed = 'transform' in document.createElement('div').style ? 'transform' : 'webkitTransform';
-
+	if ('transform' in testDiv.style) {
+		transformPrefixed = 'transform';
+	} else if ('webkitTransform' in testDiv.style) {
+		transformPrefixed = 'webkitTransform';
+	} else {
+		isSupportedBrowser = false;
+	}
+	
+	var supportsMsOverflowStyle = '-ms-overflow-style' in testDiv.style;
 	var supportsMutationObserver = window.MutationObserver !== undefined;
 	var supportsEventConstructor = typeof window.Event == "function";
 
@@ -100,20 +109,25 @@
 		this.scrollElement = scrollElement;
 		this.options = options || {};
 		
-		this.scrollElement.style.overflow = 'auto';
 		if (!this.options.customDimensions) {
 			this.scrollElement.style.width = '100%';
 			this.scrollElement.style.height = '100%';
 		}
 		
-		if(isUsingWidthHack === undefined) isUsingWidthHack = getScrollbarWidth() > 0 && !('-ms-overflow-style' in this.scrollElement.style);
-		
-		if (this.options.customDimensions && isUsingWidthHack) {
-			// With custom dimensions the width cannot be changed to hide the scrollbar so just default to native scrolling (Firefox)
-			this.options.useNative = true;
-		}
+		// Fall back to native scrolling if necessary features are not supported
+		if (!isSupportedBrowser) this.options.useNative = true;
 		
 		if (!this.options.useNative) {
+			if (isUsingWidthHack === undefined) isUsingWidthHack = !supportsMsOverflowStyle && getScrollbarWidth() > 0;
+			// With custom dimensions the width cannot be changed to hide the scrollbar so just default to native scrolling (Firefox)
+			if (this.options.customDimensions && isUsingWidthHack) this.options.useNative = true;
+		}
+		
+		if (this.options.useNative) {
+			this.scrollElement.style.overflowY = 'auto';
+		} else {
+			// Permanent scrollbars prevents unnecessary repaints when the scrollbar would no longer be needed
+			this.scrollElement.style.overflowY = 'scroll';
 			this.initScrollbar();
 		}
 		
@@ -126,11 +140,12 @@
 			var self = this;
 			// Disable native scrollbar
 			this.scrollElement.classList.add('hide-scrollbar');
-
 			if (isUsingWidthHack) {
+				// Make the scrolling element larger than the containing element so that the scrollbar is hidden
+				this.scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px';
 				// Prevent user from scrolling the scrollbar into view
-				this.scrollElement.offsetParent.style.overflow = 'hidden';
-			} else if ('-ms-overflow-style' in this.scrollElement.style) {
+				this.scrollElement.offsetParent.style.overflowX = 'hidden';
+			} else if (supportsMsOverflowStyle) {
 				this.scrollElement.style.msOverflowStyle = 'none';
 			}
 			
@@ -186,7 +201,7 @@
 			// Create storage for events that can be registered
 			this.events = {};
 	
-			this.scrollElement.addEventListener('scroll', function () {
+			var onScrollFunction = function () {
 				self.hasScrolledRecently = true;
 				self.requestUpdate();
 				if (!self.isScrolling) {
@@ -204,7 +219,11 @@
 						}
 					}, 200);
 				}
-			});
+			};
+	
+			if (this.scrollElement.addEventListener) {
+				this.scrollElement.addEventListener('scroll', onScrollFunction);
+			} else this.scrollElement.onscroll = onScrollFunction;
 		},
 		
 		refresh: function () {
@@ -315,13 +334,10 @@
 			if (clientHeight >= scrollHeight - 1) {
 				if (this.track.style.visibility !== 'hidden') {
 					this.track.style.visibility = 'hidden';
-					if (isUsingWidthHack) this.scrollElement.style.width = '100%';
 				}
 				return;
 			} else if (this.track.style.visibility !== 'visible') { 
 				this.track.style.visibility = 'visible';
-				//Make the scrolling element larger than the containing element so that the scrollbar is hidden
-				if (isUsingWidthHack) this.scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px';
 			}
 			
 			var availableTrackHeight = this.calculateAvailableTrackHeight(clientHeight); 

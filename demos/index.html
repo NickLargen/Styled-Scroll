@@ -6,8 +6,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Styled Scroll Demo</title>
         
-        <script type="text/javascript" src="../src/styled-scroll.js"></script>
-        <link rel="stylesheet" type="text/css" href="../demos/styles.css">
         
         <script type="text/javascript">
             function loaded() {
@@ -43,6 +41,13 @@
                 new StyledScroll(document.getElementById('static-list'));
                 new StyledScroll(document.getElementById('border-content'), {customDimensions: true});
                 
+                styledScroll.on('scrollStart', function () {
+                    console.log('Scroll started.');
+                });
+                styledScroll.on('scrollEnd', function () {
+                    console.log('Finished scrolling.');
+                });
+                
                 /* Create a large number of StyledScrolls to check performance */
                 // for(var i = 0; i < 50; i++) {
                 //     new StyledScroll(ul.children[i]);
@@ -55,6 +60,8 @@
                 // });
             }
         </script>
+        <link rel="stylesheet" type="text/css" href="../demos/styles.css">
+        <script type="text/javascript" src="../src/styled-scroll.js"></script>
     </head>
     
     <body onload="loaded()">
@@ -98,10 +105,4 @@ As Dionysiac creatures they are lovers of wine and women, and they are ready for
 
 
 
-<!--
-                // styledScroll.on('scrollStart', function () {
-                //     console.log('Scroll started.');
-                // });
-                // styledScroll.on('scrollEnd', function () {
-                //     console.log('Finished scrolling.');
-                // });
+             
