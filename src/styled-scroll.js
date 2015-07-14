@@ -18,7 +18,8 @@
 	} else {
 		isSupportedBrowser = false;
 	}
-	
+
+	var supportsWebkitOverflowScrolling = '-webkit-overflow-scrolling' in testDiv.style;
 	var supportsMsOverflowStyle = '-ms-overflow-style' in testDiv.style;
 	var supportsMutationObserver = window.MutationObserver !== undefined;
 	var supportsEventConstructor = typeof window.Event == "function";
@@ -41,9 +42,9 @@
 
 	function addResizeTrigger(element, callback) {
 		// Create an element that supports resize events with the same height  and width as the provided element
-		// Changes to width need to be listened to because child elements may change height as their width changes
-		var resizeTrigger = document.createElement('iframe');
-		resizeTrigger.setAttribute('style', 'position: absolute; top: 0; left: 0; height: 100%; width: 100%; border: none; pointer-events:none;');
+	    // Changes to width need to be listened to because child elements may change height as their width changes
+	    var resizeTrigger = document.createElement('iframe');
+		resizeTrigger.setAttribute('style', 'position: absolute; top: 0; left: 0; height: 100%; width: 100%; border: none; pointer-events: none; visibility: hidden;');
 
 		resizeTrigger.onload = function () {
 			if (resizeTrigger.contentWindow) {
@@ -110,8 +111,20 @@
 		this.options = options || {};
 		
 		if (!this.options.customDimensions) {
-			this.scrollElement.style.width = '100%';
-			this.scrollElement.style.height = '100%';
+			var parentMaxHeight = getComputedStyle(scrollElement.offsetParent).maxHeight;
+			this.scrollElement.style.maxHeight = '100%';
+		}
+
+		if (supportsWebkitOverflowScrolling) {
+            // Touch webkitOverflowScrolling enables momentum which is required for a good user experience
+		    this.scrollElement.style.webkitOverflowScrolling = 'touch';
+	        // IOS does not supprt hiding scrollbars with touch overflow scrolling so revert to native 
+		    this.options.useNative = true;
+
+		    // Work around for IOS 8 issue with webkitOverflowScrolling where dynamically adding content does not immediately allow scrolling
+		    var scrollForcer = document.createElement('div');
+		    scrollForcer.setAttribute('style', 'position: absolute; height: calc(100% + 1px); width: 1px; top: 0; left: 0; visibility: hidden');
+		    this.scrollElement.appendChild(scrollForcer);
 		}
 		
 		// Fall back to native scrolling if necessary features are not supported
@@ -331,7 +344,9 @@
 			var scrollHeight = this.scrollElement.scrollHeight;
 			var clientHeight = this.scrollElement.clientHeight;
 			
-			if (clientHeight >= scrollHeight - 1) {
+			// Add a small grace period so that scrollbars don't appear if there are only a few pixels to scroll
+			// This is very important because IE <= 11 incorrectly calculates scrollHeight (observed up to 101% of actual value)
+			if (clientHeight >= scrollHeight * 0.95) {
 				if (this.track.style.visibility !== 'hidden') {
 					this.track.style.visibility = 'hidden';
 				}

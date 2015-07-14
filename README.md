@@ -71,7 +71,7 @@ Important note: avoid padding on the thumb or margins on either the thumb or tra
 
 ## Browser Compatability
 
-Styled Scroll is tested to work on the latest versions of Chrome, Firefox, Safari, and IE 10+ on both desktop and mobile devices. If a browser lacks necessary features it will simply revert to the native scrollbar.
+Styled Scroll is tested to work on the latest versions of Chrome, Firefox, and IE 10+ on both desktop and mobile devices. If a browser lacks necessary features for customization the appearance will simply revert to the native scrollbar.
 
 ## Versioning
 
