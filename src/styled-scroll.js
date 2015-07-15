@@ -9,7 +9,7 @@
 		function (callback) { window.setTimeout(callback, 1000 / 60); };
 		
 	var testDiv = document.createElement('div');
-	var transformPrefixed, isSupportedBrowser = testDiv.classList !== undefined;
+	var transformPrefixed, isSupportedBrowser = testDiv.classList !== undefined && testDiv.addEventListener !== undefined;
 	// webkitTransform is the only prefix we care about since IE9 is not supported
 	if ('transform' in testDiv.style) {
 		transformPrefixed = 'transform';
@@ -102,16 +102,18 @@
 		return scrollbarWidth;
 	}
 	
-	var styledScrollMutationConfig = { attributes: true, childList: true, subtree: true };
 	// Whether or not scrollbars are being hidden by modifying element size (for browsers that don't support hiding scrollbars)
 	var isUsingWidthHack; 
 
+	/* ========================= CLASS STYLED SCROLL ========================= */
 	function StyledScroll(scrollElement, options) {
 		this.scrollElement = scrollElement;
 		this.options = options || {};
 		
 		if (!this.options.customDimensions) {
-			var parentMaxHeight = getComputedStyle(scrollElement.offsetParent).maxHeight;
+			// var parentMaxHeight = getComputedStyle(scrollElement.offsetParent).maxHeight; //seems to be slow
+			// TODO: Fix height calculation when the parent height is explicitly set as less than its max height and when the parent has borders
+			// this.scrollElement.style.maxHeight = (parentMaxHeight === 'none' || parentMaxHeight.indexOf('%') != -1) ? '100%' : parentMaxHeight;
 			this.scrollElement.style.maxHeight = '100%';
 		}
 
@@ -150,7 +152,6 @@
 	StyledScroll.prototype = {
 		
 		initScrollbar: function () {
-			var self = this;
 			// Disable native scrollbar
 			this.scrollElement.classList.add('hide-scrollbar');
 			if (isUsingWidthHack) {
@@ -165,23 +166,25 @@
 			// Create a new scrollbar and update it whenever the viewport or the content changes
 			this.createTrack();
 			this.scrollElement.parentNode.appendChild(this.track);
-			this.scrollbar = new Scrollbar(this, this.track);
+			var scrollbar = this.scrollbar = new Scrollbar(this, this.options.customDimensions);
 
-			var requestScrollbarUpdate = function () {
-				self.refresh();
+			this.refresh = function () {
+				scrollbar.requestUpdate();
 			};
-		
+			
 			if (supportsMutationObserver) {
-				this.observer = new MutationObserver(requestScrollbarUpdate);
-				this.observer.observe(this.scrollElement, styledScrollMutationConfig);
+				this.observer = new MutationObserver(this.refresh);
+				this.observer.observe(this.scrollElement, { attributes: true, childList: true, subtree: true });
 			} else {
-				this.scrollElement.addEventListener('DOMSubtreeModified', requestScrollbarUpdate);
+				this.scrollElement.addEventListener('DOMSubtreeModified', this.refresh);
 				console.log('Mutation observer support not detected, falling back to mutation events. Please verify your browser is up to date.');
 			}
 
-			addResizeTrigger(this.scrollElement, requestScrollbarUpdate);
+			// Position the scroll element so that the resize trigger can use its dimensions
+			if (getComputedStyle(this.scrollElement).position === 'static') this.scrollElement.style.position = 'relative';
+			addResizeTrigger(this.scrollElement, this.refresh);
 		},
-
+		
 		createTrack: function () {
 			this.track = document.createElement('div');
 			this.thumb = document.createElement('div');
@@ -214,14 +217,13 @@
 			// Create storage for events that can be registered
 			this.events = {};
 	
-			var onScrollFunction = function () {
+			this.scrollStartEnd = function () {
 				self.hasScrolledRecently = true;
-				self.requestUpdate();
 				if (!self.isScrolling) {
 					self.isScrolling = true;
 					self.triggerEvent('scrollStart');
 					
-					// Create a timer marks scrolling as ended if a scroll event has not occured within some timeout
+					// Create a timer that marks scrolling as ended if a scroll event has not occured within some timeout
 					var intervalId = setInterval(function checkIfScrolled() {
 						if (self.hasScrolledRecently) {
 							self.hasScrolledRecently = false;
@@ -235,47 +237,34 @@
 			};
 	
 			if (this.scrollElement.addEventListener) {
-				this.scrollElement.addEventListener('scroll', onScrollFunction);
-			} else this.scrollElement.onscroll = onScrollFunction;
+				this.scrollElement.addEventListener('scroll', this.scrollStartEnd);
+			} else this.scrollElement.onscroll = this.scrollStartEnd;
 		},
 		
-		refresh: function () {
-			this.updateScrollbar = true;
-			this.requestUpdate(); 
-		},
-		
-		requestUpdate: function () {
-			// Do not allow stacked update requests
-			if (!this.isUpdateRequested && !this.options.useNative) {
-				this.isUpdateRequested = true;
-				var self = this;
-				requestAnimationFrame(function () { self.update(); });
-			}
-		},
-		
-		update: function () {
-			if (this.updateScrollbar) {
-				this.scrollbar.updateScrollbar();
-				this.updateScrollbar = false;
-			} else this.scrollbar.updateThumbPosition();
-			this.isUpdateRequested = false;
-		},
-
 		destroy: function () { 
+			if (this.scrollElement.removeEventListener) {
+				this.scrollElement.removeEventListener('scroll', this.scrollStartEnd);
+			} else this.scrollElement.onscroll = null;
+			
 			if (this.options.useNative) return;
+			
 			if (this.isDestroyed) {
 				console.warn('Attempted to destroy an already destroyed Styled Scroll object, ignoring request.');
 				return;
 			}
 			this.isDestroyed = true;
 			
-			this.scrollbar.destroy();
-			
-			// TODO: Unsure if explicit observer disconnect and resize listener removal are necessary, no observed leaks without them
 			if (supportsMutationObserver) this.observer.disconnect();
-			else this.scrollElement.removeEventListener('DOMSubtreeModified', this.requestScrollbarUpdate);
+			else this.scrollElement.removeEventListener('DOMSubtreeModified', this.refresh);
 			
 			removeResizeTrigger(this.scrollElement);
+			
+			this.track = null;
+			this.thumb = null;
+			this.refresh = null;
+			
+			this.scrollbar.destroy();
+			this.scrollbar = null;
 		},
 		
 		on: function (type, fn) {
@@ -316,23 +305,19 @@
 		},
 	};
 
-	function Scrollbar(styledScroll, track) {
-		this.track = track;
-		this.thumb = this.track.children[0];
+	/* ========================= CLASS SCROLLBAR ========================= */
+	function Scrollbar(styledScroll, translateTrack) {
+		this.track = styledScroll.track;
+		this.thumb = styledScroll.thumb;
 		this.thumbStyle = this.thumb.style;
 		this.scrollElement = styledScroll.scrollElement;
-		this.styledScroll = styledScroll;
-
-		this.lastMouseY = 0;
+		this.translateTrack = !!translateTrack;
 		
 		var self = this;
-		startEvents.forEach(function (eventName) { 
-			self.thumb.addEventListener(eventName, self);
-		});
+		this.scrollElement.addEventListener('scroll', this.scrollListener = function () { self.requestThumbUpdate(); });
 
-		endEvents.forEach(function (eventName) {
-			document.addEventListener(eventName, self);
-		});
+		this.lastMouseY = 0;
+		this.initThumbEvents();
 	}
 	
 	function getStyleValue(style) {
@@ -340,13 +325,38 @@
 	}
 	
 	Scrollbar.prototype = {
+		requestUpdate: function () {
+			this.isScrollbarInvalidated = true;
+			this.requestThumbUpdate(); 
+		},
+		
+		requestThumbUpdate: function () {
+			// Do not allow stacked update requests
+			if (!this.isUpdateRequested) { 
+				this.isUpdateRequested = true;
+				var self = this;
+				requestAnimationFrame(function () { self.update(); });
+			}
+		},
+		
+		update: function () {
+			// If the scrollbar has already been destroyed don't attempt to update
+			if (this.track) { 
+				if (this.isScrollbarInvalidated) {
+					this.updateScrollbar();
+					this.isScrollbarInvalidated = false;
+				} else this.updateThumbPosition();
+			}
+			this.isUpdateRequested = false;
+		},
+		
 		updateScrollbar: function () {
 			var scrollHeight = this.scrollElement.scrollHeight;
 			var clientHeight = this.scrollElement.clientHeight;
 			
 			// Add a small grace period so that scrollbars don't appear if there are only a few pixels to scroll
 			// This is very important because IE <= 11 incorrectly calculates scrollHeight (observed up to 101% of actual value)
-			if (clientHeight >= scrollHeight * 0.95) {
+			if (clientHeight >= scrollHeight * 0.98) {
 				if (this.track.style.visibility !== 'hidden') {
 					this.track.style.visibility = 'hidden';
 				}
@@ -376,7 +386,7 @@
 			var trackCompStyle = getComputedStyle(this.track);
 			var thumbCompStyle = getComputedStyle(this.thumb);
 			
-			if (this.styledScroll.options.customDimensions) {
+			if (this.translateTrack) {
 				var trackTop = getStyleValue(trackCompStyle.top),
 					trackBottom = getStyleValue(trackCompStyle.bottom),
 					borderTop = getStyleValue(trackCompStyle.borderTopWidth),
@@ -415,61 +425,67 @@
 			this.thumbStyle[transformPrefixed] = 'translateY(' + this.getCurrentThumbTop() + 'px)';
 		},
 
-		start: function (e) {
-			this.lastMouseY = (e.touches ? e.touches[0] : e).pageY;
-
-			this.dragTopOffset = this.lastMouseY - this.getCurrentThumbTop();
-			
-			e.preventDefault();
-			e.stopPropagation();
-			
+		initThumbEvents: function () {
 			var self = this;
-			moveEvents.forEach(function (eventName) {
-				document.addEventListener(eventName, self);
-			});
-		},
+			
+			self.start = function (e) {
+				self.lastMouseY = (e.touches ? e.touches[0] : e).pageY;
 
-		//Consider performance: this function can be called 15+ times per frame
-		move: function (e) {
-			this.lastMouseY = (e.touches ? e.touches[0] : e).pageY;
+				self.dragTopOffset = self.lastMouseY - self.getCurrentThumbTop();
 
-			this.isDragged = true;
-			this.styledScroll.requestUpdate();
+				e.preventDefault();
+				e.stopPropagation();
 
-			e.preventDefault();
-			e.stopPropagation();
-		},
-		
-		end: function () {
-			var self = this;
-			moveEvents.forEach(function (eventName) {
-				document.removeEventListener(eventName, self);
-			});
+				for (var i = moveEvents.length; i--;) {
+					document.addEventListener(moveEvents[i], self.move);
+				}
+
+				for (var i = endEvents.length; i--;) {
+					document.addEventListener(endEvents[i], self.end);
+				}
+			};
+			
+			//Consider performance: this function can be called 15+ times per frame
+			self.move = function (e) {
+				self.lastMouseY = (e.touches ? e.touches[0] : e).pageY;
+
+				self.isDragged = true;
+				self.requestThumbUpdate();
+
+				e.preventDefault();
+				e.stopPropagation();
+			};
+			
+			self.end = function (e) {
+				for (var i = moveEvents.length; i--;) {
+					document.removeEventListener(moveEvents[i], self.move);
+				}
+				
+				for (var i = endEvents.length; i--;) {
+					document.removeEventListener(endEvents[i], self.end);
+				}
+			};
+			
+			for (var i = startEvents.length; i--;) {
+				self.thumb.addEventListener(startEvents[i], self.start);
+			}
 		},
 		
 		destroy: function () {
 			var self = this;
-			startEvents.forEach(function (eventName) {
-				self.thumb.removeEventListener(eventName, self);
-			});
-
-			moveEvents.concat(endEvents).forEach(function (eventName) {
-				document.removeEventListener(eventName, self);
-			});
+			for (var i = moveEvents.length; i--;) {
+				document.removeEventListener(moveEvents[i], self.move);
+			}
+			
+			for (var i = endEvents.length; i--;) {
+				document.removeEventListener(endEvents[i], self.end);
+			}
 
 			this.track.parentNode.removeChild(this.track);
+			this.track = null;
+			this.thumb = null;
+			this.scrollElement.removeEventListener('scroll', this.scrollListener);
 		},
-
-		handleEvent: function (e) {
-			// Benchmarking showed if statement to have better performance on moves than switch statements or a map
-			if (moveEvents.indexOf(e.type) !== -1) {
-				this.move(e);
-			} else if (startEvents.indexOf(e.type) !== -1) {
-				this.start(e);
-			} else if (endEvents.indexOf(e.type) !== -1) {
-				this.end(e);
-			}
-		}
 	};
 
 	if (typeof module != 'undefined' && module.exports) {

@@ -26,32 +26,39 @@
                 };;
                 
                 document.getElementById('remove-rows').onclick = function () {
-                    for(var i = 0; i < 1; i++) {
+                    for(var i = 0; i < 10; i++) {
                         var nodes = document.querySelectorAll('#elementToScroll li');
                         ul.removeChild(nodes[nodes.length  - 1]);
                     }
-                    
                 };
+                
     
-                for (var i = 0; i < 1; i++) {
+                for (var i = 0; i < 10; i++) {
                     addRows.click();
                 }
                 
                 var styledScroll = new StyledScroll(ul);
                 new StyledScroll(document.getElementById('static-list'));
                 new StyledScroll(document.getElementById('border-content'), {customDimensions: true});
+                new StyledScroll(document.getElementById('max-height-content'));
                 
-                styledScroll.on('scrollStart', function () {
-                    console.log('Scroll started.');
-                });
-                styledScroll.on('scrollEnd', function () {
-                    console.log('Finished scrolling.');
-                });
+                
+                
+                document.getElementById('destroy').onclick = function () {
+                    styledScroll.destroy();    
+                };
+                
+                // styledScroll.on('scrollStart', function () {
+                //     console.log('Scroll started.');
+                // });
+                // styledScroll.on('scrollEnd', function () {
+                //     console.log('Finished scrolling.');
+                // });
                 
                 /* Create a large number of StyledScrolls to check performance */
-                // for(var i = 0; i < 50; i++) {
-                //     new StyledScroll(ul.children[i]);
-                // }
+                for(var i = 0; i < 50; i++) {
+                    new StyledScroll(ul.children[i]);
+                }
                 
                 /* Add elements every frame */
                 // window.requestAnimationFrame(function createNewElements() { 
@@ -96,8 +103,23 @@ About Satyrs, Praxiteles gives a new interpretation on the subject of free and c
 As Dionysiac creatures they are lovers of wine and women, and they are ready for every physical pleasure. They roam to the music of pipes (auloi), cymbals, castanets, and bagpipes, and they love to chase maenads or bacchants (with whom they are obsessed, and whom they often pursue), or in later art, dance with the nymphs , and have a special form of dance called sikinnis. Because of their love of wine, they are often represented holding wine cups, and they appear often in the decorations on wine cups.
             </div>
         </div>
+        <div style="/*max-height: 600px;*/">
+        <div id="max-height-div">
+            <div id="max-height-content">
+                In Greek mythology, a satyr (UK /ˈsætə/, US /ˈseɪtər/; Greek: σάτυρος satyros, pronounced [sátyros]) is one of a troop of ithyphallic male companions of Dionysus with horse-like (equine) features, including a horse-tail, horse-like ears, and sometimes a horse-like phallus. Early artistic representations sometimes include horse-like legs, but in 6th-century BC black-figure pottery human legs are the most common. In Roman Mythology there is a concept similar to satyrs, with goat-like features: the faun, being half-man, half-goat. Greek-speaking Romans often used the Greek term saturos when referring to the Latin faunus, and eventually syncretized the two. The female "Satyresses" were a late invention of poets — that roamed the woods and mountains. In myths they are often associated with pipe-playing.
+The satyr's chief was Silenus, a minor deity associated (like Hermes and Priapus) with fertility. These characters can be found in the only complete remaining satyr play, Cyclops, by Euripides, and the fragments of Sophocles' Ichneutae (Tracking Satyrs). The satyr play was a short, lighthearted tailpiece performed after each trilogy of tragedies in Athenian festivals honoring Dionysus. There is not enough evidence to determine whether the satyr play regularly drew on the same myths as those dramatized in the tragedies that preceded. The groundbreaking tragic playwright Aeschylus is said to have been especially loved for his satyr plays, but none of them have survived.
+Attic painted vases depict mature satyrs as being strongly built with flat noses, large pointed ears, long curly hair, and full beards, with wreaths of vine or ivy circling their balding heads. Satyrs often carry the thyrsus: the rod of Dionysus tipped with a pine cone.
+
+The goat on the left has a short goat tail, but the Greek satyr on the right has a long horse tail, not a goat tail (Attic ceramic, 520 BC).
+Satyrs acquired their goat-like aspect through later Roman conflation with Faunus, a carefree Italic nature spirit of similar characteristics and identified with the Greek god Pan. Hence satyrs are most commonly described in Latin literature as having the upper half of a man and the lower half of a goat, with a goat's tail in place of the Greek tradition of horse-tailed satyrs; therefore, satyrs became nearly identical with fauns. Mature satyrs are often depicted in Roman art with goat's horns, while juveniles are often shown with bony nubs on their foreheads.
+About Satyrs, Praxiteles gives a new interpretation on the subject of free and carefree life. Instead of an elf with pointed ears and repulsive goat hooves, we face a child of nature, pure, but tame and fearless and brutal instincts necessary to enable it to defend itself against threats, and survives even without the help of modern civilization. Above all, the Satyr with flute has a small companion for him, shows the deep connection with nature, the soft whistle of the wind, the sound of gurgling water of the crystal spring, the birds singing, or perhaps the singing a melody of a human soul that feeds higher feelings.
+As Dionysiac creatures they are lovers of wine and women, and they are ready for every physical pleasure. They roam to the music of pipes (auloi), cymbals, castanets, and bagpipes, and they love to chase maenads or bacchants (with whom they are obsessed, and whom they often pursue), or in later art, dance with the nymphs , and have a special form of dance called sikinnis. Because of their love of wine, they are often represented holding wine cups, and they appear often in the decorations on wine cups.
+            </div>
+        </div>
+        </div>
         <div id="footer">
             <button id="remove-rows">Remove rows</button>
+            <button id="destroy">Destroy</button>
         </div>
     </body>
 

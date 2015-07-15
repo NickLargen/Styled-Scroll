@@ -44,7 +44,6 @@ button:hover {
 #header,
 #footer {
     height: 40px;
-    z-index: 2;
     display: flex;
     justify-content: center;
 }
@@ -67,7 +66,6 @@ button:hover {
 }
 
 #elementToScroll {
-    z-index: 1;
     text-align: left;
 }
 
@@ -128,6 +126,22 @@ button:hover {
 }
 
 
+#max-height-div {
+    max-height: 850px;
+    height: 50%;
+    left: 900px;
+    position: absolute; 
+    width: 350px; 
+    top: 150px; 
+    /*bottom: 400px;*/
+    background: cornsilk; 
+    border: 20px solid grey
+}
+
+#max-height-content {
+    /*max-height: 70%;*/
+    padding: 5px;
+}
 
 /* styled-scroll scrollbars*/
 .hide-scrollbar::-webkit-scrollbar {
@@ -135,6 +149,7 @@ button:hover {
 }
 
 .styled-scroll-track {
+    z-index: 900;
     top: 2px;
     right: 0;
     bottom: 2px;
@@ -146,7 +161,7 @@ button:hover {
 }
 
 .styled-scroll-thumb {
-    z-index: 100;
+    z-index: 900;
     background: rgba(0,0,0,0.5);
     border:1px solid rgba(255,255,255,0.9);
     background-clip: padding-box;
@@ -155,6 +170,11 @@ button:hover {
     top: 0px;
     bottom: 0px;
 	width: 100%;
+}
+
+.styled-scroll-thumb:active {
+    background: rgba(0,0,0,1);
+   
 }
 
 .styled-scroll-thumb:hover { 
