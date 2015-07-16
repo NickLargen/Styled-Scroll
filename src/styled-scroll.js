@@ -1,5 +1,14 @@
-(function (window, document) {
+(function (window, document, undefined) {
 	'use strict';
+
+	var defaultOptions = {
+		refreshTriggers: {
+			contentChange: true,
+			elementResize: true,
+			windowResize: false,
+			poll: false,
+		}
+	};
 
 	var requestAnimationFrame = window.requestAnimationFrame ||
 		window.webkitRequestAnimationFrame ||
@@ -109,6 +118,9 @@
 	function StyledScroll(scrollElement, options) {
 		this.scrollElement = scrollElement;
 		this.options = options || {};
+		for (var property in defaultOptions) {
+			if(this.options[property] === undefined) this.options[property] = defaultOptions[property];
+		}
 
 		if (!this.options.customDimensions) {
 			// var parentMaxHeight = getComputedStyle(scrollElement.offsetParent).maxHeight; //seems to be slow
@@ -172,17 +184,37 @@
 				scrollbar.requestUpdate();
 			};
 
-			if (supportsMutationObserver) {
-				this.observer = new MutationObserver(this.refresh);
-				this.observer.observe(this.scrollElement, { attributes: true, childList: true, subtree: true });
-			} else {
-				this.scrollElement.addEventListener('DOMSubtreeModified', this.refresh);
-				console.log('Mutation observer support not detected, falling back to mutation events. Please verify your browser is up to date.');
+			if (this.options.refreshTriggers.contentChange) {
+				if (supportsMutationObserver) {
+					this.observer = new MutationObserver(this.refresh);
+					this.observer.observe(this.scrollElement, { attributes: true, childList: true, subtree: true });
+				} else {
+					this.scrollElement.addEventListener('DOMSubtreeModified', this.refresh);
+					console.log('Mutation observer support not detected, falling back to mutation events. Please verify your browser is up to date.');
+				}
 			}
 
-			// Position the scroll element so that the resize trigger can use its dimensions
-			if (getComputedStyle(this.scrollElement).position === 'static') this.scrollElement.style.position = 'relative';
-			addResizeTrigger(this.scrollElement, this.refresh);
+			if (this.options.refreshTriggers.elementResize) {
+				// Position the scroll element so that the resize trigger can use its dimensions
+				if (getComputedStyle(this.scrollElement).position === 'static') this.scrollElement.style.position = 'relative';
+				addResizeTrigger(this.scrollElement, this.refresh);
+			}
+
+			if (this.options.refreshTriggers.windowResize) {
+				window.addEventListener('resize', this.refresh);
+			}
+
+			var pollInterval = this.options.refreshTriggers.poll;
+			
+			console.log(this.options.refreshTriggers.poll);
+			console.log(!!pollInterval);
+			if (pollInterval) {
+				if (pollInterval === true) pollInterval = 250;
+				if (pollInterval < 15) pollInterval = 15;
+				this.pollIntervalId = setInterval(this.refresh, pollInterval);
+			}
+
+			this.refresh();
 		},
 
 		createTrack: function () {
@@ -217,28 +249,30 @@
 			// Create storage for events that can be registered
 			this.events = {};
 
-			this.scrollStartEnd = function () {
-				self.hasScrolledRecently = true;
-				if (!self.isScrolling) {
-					self.isScrolling = true;
-					self.triggerEvent('scrollStart');
+			if (this.options.scrollEvents) {
+				this.scrollStartEnd = function () {
+					self.hasScrolledRecently = true;
+					if (!self.isScrolling) {
+						self.isScrolling = true;
+						self.triggerEvent('scrollStart');
 
-					// Create a timer that marks scrolling as ended if a scroll event has not occured within some timeout
-					var intervalId = setInterval(function checkIfScrolled() {
-						if (self.hasScrolledRecently) {
-							self.hasScrolledRecently = false;
-						} else {
-							clearInterval(intervalId);
-							self.isScrolling = false;
-							self.triggerEvent('scrollEnd');
-						}
-					}, 200);
-				}
-			};
+						// Create a timer that marks scrolling as ended if a scroll event has not occured within some timeout
+						var intervalId = setInterval(function checkIfScrolled() {
+							if (self.hasScrolledRecently) {
+								self.hasScrolledRecently = false;
+							} else {
+								clearInterval(intervalId);
+								self.isScrolling = false;
+								self.triggerEvent('scrollEnd');
+							}
+						}, 200);
+					}
+				};
 
-			if (this.scrollElement.addEventListener) {
-				this.scrollElement.addEventListener('scroll', this.scrollStartEnd);
-			} else this.scrollElement.onscroll = this.scrollStartEnd;
+				if (this.scrollElement.addEventListener) {
+					this.scrollElement.addEventListener('scroll', this.scrollStartEnd);
+				} else this.scrollElement.onscroll = this.scrollStartEnd;
+			}
 		},
 
 		destroy: function () {
@@ -254,10 +288,22 @@
 			}
 			this.isDestroyed = true;
 
-			if (supportsMutationObserver) this.observer.disconnect();
-			else this.scrollElement.removeEventListener('DOMSubtreeModified', this.refresh);
+			if (this.options.refreshTriggers.contentChange) {
+				if (supportsMutationObserver) this.observer.disconnect();
+				else this.scrollElement.removeEventListener('DOMSubtreeModified', this.refresh);
+			}
 
-			removeResizeTrigger(this.scrollElement);
+			if (this.options.refreshTriggers.elementResize) {
+				removeResizeTrigger(this.scrollElement);
+			}
+
+			if (this.options.refreshTriggers.windowResize) {
+				window.removeEventListener('resize', this.refresh);
+			}
+
+			if (this.options.refreshTriggers.poll) {
+				clearInterval(this.pollIntervalId);
+			}
 
 			this.track = null;
 			this.thumb = null;
@@ -265,6 +311,7 @@
 
 			this.scrollbar.destroy();
 			this.scrollbar = null;
+			this.scrollElement = null;
 		},
 
 		on: function (type, fn) {
@@ -299,7 +346,7 @@
 				functionArgs[argIndex - 1] = arguments[argIndex];
 			}
 
-			for (var funIndex = 0 ; funIndex < numFunctions; funIndex++) {
+			for (var funIndex = 0; funIndex < numFunctions; funIndex++) {
 				eventFunctions[funIndex].apply(this, functionArgs);
 			}
 		},

@@ -20,7 +20,7 @@ If you are finished with the object, make sure to clear it from memory:
     styledScroll = null;
 
     
-The scrollbar will automatically update its dimensions and position with any changes to the scrollable region. However, changing a scrollbar's styling at runtime may require you to inform it that its position has changed:
+The scrollbar will automatically update its dimensions and position with any changes to the scrollable region (see [options](#options) to configure this behavior). However, changing a scrollbar's styling at runtime may require you to inform it that its position has changed:
 
     styledScroll.refresh();
 
@@ -70,15 +70,33 @@ You can apply any styles that you want to customize the appearance. For example 
 Important note: avoid padding on the thumb or margins on either the thumb or track. Use top/right/bottom/left to change their location.
 
 ## Browser Compatability
-
 Styled Scroll is tested to work on the latest versions of Chrome, Firefox, and IE 10+ on both desktop and mobile devices. If a browser lacks necessary features for customization the appearance will simply revert to the native scrollbar.
 
-## Versioning
+<h2 id='options'>Options</h2>
+Styled Scroll accepts an options parameter for customized behavior. _For brevity falsey default values will not be listed._
 
+##### refreshTriggers
+An object that defines when the scrollbar will automatically be refreshed in response to an event.
+
+* **contentChange:** Boolean. Content additions, modifications, and deletions can affect the scrollheight. On most platforms this uses a Mutation Observer.
+* **elementResize:** Boolean. The scrollable element has changed in width or height. Since dom elements don't natively fire resize events this is implemented by inserting a child iframe with 100% width and height. This is computationally intensive (particularly with a large number of scrollable elements) and should be disabled if unnecessary.
+* **windowResize:** Boolean. The scrollbar will be updated whenever the window is. This is very useful for any element whose dimensions are determined by window size.
+* **poll:** Number. An interval in milliseconds to constantly send refreshes. This a brute force approach that will guarantee scrollbar accuracy but consumes resources even on elements that aren't modified, so use only if absolutely necessary. Non-positive numbers will cause refreshes to be requested at 60fps and a boolean true will use a default poll interval.
+
+Default: `{ contentChange: true, elementResize: true }`
+    
+Omitted properties will not be used. To handle all refreshes yourself use `refreshTriggers: {}`.
+
+##### scrollEvents
+Boolean. Will cause `scrollStart` and `scrollEnd` events to be triggered at the appropriate time. Events can be registered and removed using the `on(event, function)` and `off(event, function)` methods that take a single event name and the function to be executed as parameters. Example usage: `scroller.on('scrollStart', function () { console.log('Scrolling started!'); });`.
+
+##### useNative
+Boolean. Creates a standard StyledScroll object but does not replace the native scrollbar with a styled one. This can be useful for using native scrollbars on specific platforms and still offers event callbacks for scrollStart and scrollEnd. This will be set to true if used on an unsupported platform.
+
+## Versioning
 Styled Scroll is maintained under [the Semantic Versioning guidelines](http://semver.org/).
 
 ## License (MIT)
-
 Copyright (c) 2015 Nick Largen
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
