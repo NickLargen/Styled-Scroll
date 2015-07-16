@@ -37,12 +37,10 @@
                     addRows.click();
                 }
                 
-                var styledScroll = new StyledScroll(ul, {refreshTriggers: {poll: true}});
+                var styledScroll = new StyledScroll(ul, {disconnectScrollbar: true});
                 new StyledScroll(document.getElementById('static-list'));
                 new StyledScroll(document.getElementById('border-content'), {customDimensions: true});
                 new StyledScroll(document.getElementById('max-height-content'));
-                
-                
                 
                 document.getElementById('destroy').onclick = function () {
                     styledScroll.destroy();    

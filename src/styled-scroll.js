@@ -178,7 +178,7 @@
 			// Create a new scrollbar and update it whenever the viewport or the content changes
 			this.createTrack();
 			this.scrollElement.parentNode.appendChild(this.track);
-			var scrollbar = this.scrollbar = new Scrollbar(this, this.options.customDimensions);
+			var scrollbar = this.scrollbar = new Scrollbar(this, this.options.customDimensions, this.options.disconnectScrollbar);
 
 			this.refresh = function () {
 				scrollbar.requestUpdate();
@@ -205,9 +205,6 @@
 			}
 
 			var pollInterval = this.options.refreshTriggers.poll;
-			
-			console.log(this.options.refreshTriggers.poll);
-			console.log(!!pollInterval);
 			if (pollInterval) {
 				if (pollInterval === true) pollInterval = 250;
 				if (pollInterval < 15) pollInterval = 15;
@@ -353,12 +350,14 @@
 	};
 
 	/* ========================= CLASS SCROLLBAR ========================= */
-	function Scrollbar(styledScroll, translateTrack) {
+	function Scrollbar(styledScroll, translateTrack, disconnect) {
 		this.track = styledScroll.track;
 		this.thumb = styledScroll.thumb;
 		this.thumbStyle = this.thumb.style;
 		this.scrollElement = styledScroll.scrollElement;
 		this.translateTrack = !!translateTrack;
+		this.disconnect = disconnect;
+		this.hidden = false;
 
 		var self = this;
 		this.scrollElement.addEventListener('scroll', this.scrollListener = function () { self.requestThumbUpdate(); });
@@ -404,12 +403,16 @@
 			// Add a small grace period so that scrollbars don't appear if there are only a few pixels to scroll
 			// This is very important because IE <= 11 incorrectly calculates scrollHeight (observed up to 101% of actual value)
 			if (clientHeight >= scrollHeight * 0.98) {
-				if (this.track.style.visibility !== 'hidden') {
-					this.track.style.visibility = 'hidden';
+				if (!this.hidden) {
+					this.hidden = true;
+					if (this.disconnect) this.track.parentNode.removeChild(this.track);
+					else this.track.style.visibility = 'hidden';
 				}
 				return;
-			} else if (this.track.style.visibility !== 'visible') {
-				this.track.style.visibility = 'visible';
+			} else if (this.hidden) {
+				this.hidden = false;
+				if (this.disconnect) this.scrollElement.parentNode.appendChild(this.track); 
+				else this.track.style.visibility = 'visible';
 			}
 
 			var availableTrackHeight = this.calculateAvailableTrackHeight(clientHeight);

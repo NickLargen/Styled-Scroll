@@ -81,7 +81,7 @@ An object that defines when the scrollbar will automatically be refreshed in res
 * **contentChange:** Boolean. Content additions, modifications, and deletions can affect the scrollheight. On most platforms this uses a Mutation Observer.
 * **elementResize:** Boolean. The scrollable element has changed in width or height. Since dom elements don't natively fire resize events this is implemented by inserting a child iframe with 100% width and height. This is computationally intensive (particularly with a large number of scrollable elements) and should be disabled if unnecessary.
 * **windowResize:** Boolean. The scrollbar will be updated whenever the window is. This is very useful for any element whose dimensions are determined by window size.
-* **poll:** Number. An interval in milliseconds to constantly send refreshes. This a brute force approach that will guarantee scrollbar accuracy but consumes resources even on elements that aren't modified, so use only if absolutely necessary. Non-positive numbers will cause refreshes to be requested at 60fps and a boolean true will use a default poll interval.
+* **poll:** Number. An interval in milliseconds to constantly send refreshes. This a brute force approach that will guarantee scrollbar accuracy but consumes resources on static elements. Avoid creating a large number of polling objects on the same page. Non-positive numbers will cause refreshes to be requested at 60fps and a boolean true will use a default poll interval.
 
 Default: `{ contentChange: true, elementResize: true }`
     
@@ -92,6 +92,9 @@ Boolean. Will cause `scrollStart` and `scrollEnd` events to be triggered at the 
 
 ##### useNative
 Boolean. Creates a standard StyledScroll object but does not replace the native scrollbar with a styled one. This can be useful for using native scrollbars on specific platforms and still offers event callbacks for scrollStart and scrollEnd. This will be set to true if used on an unsupported platform.
+
+##### disconnectScrollbar
+Boolean. The track will be removed from the dom when it does not need to be displayed instead of changing that track's `visible` css. The same track will be reinserted if the scrollbar should reappear.
 
 ## Versioning
 Styled Scroll is maintained under [the Semantic Versioning guidelines](http://semver.org/).
