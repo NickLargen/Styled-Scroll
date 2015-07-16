@@ -119,7 +119,7 @@
 		this.scrollElement = scrollElement;
 		this.options = options || {};
 		for (var property in defaultOptions) {
-			if(this.options[property] === undefined) this.options[property] = defaultOptions[property];
+			if (this.options[property] === undefined) this.options[property] = defaultOptions[property];
 		}
 
 		if (!this.options.customDimensions) {
@@ -411,7 +411,7 @@
 				return;
 			} else if (this.hidden) {
 				this.hidden = false;
-				if (this.disconnect) this.scrollElement.parentNode.appendChild(this.track); 
+				if (this.disconnect) this.scrollElement.parentNode.appendChild(this.track);
 				else this.track.style.visibility = 'visible';
 			}
 
@@ -531,7 +531,8 @@
 				document.removeEventListener(endEvents[i], self.end);
 			}
 
-			this.track.parentNode.removeChild(this.track);
+			var parent = this.track.parentNode;
+			if (parent) parent.removeChild(this.track);
 			this.track = null;
 			this.thumb = null;
 			this.scrollElement.removeEventListener('scroll', this.scrollListener);
