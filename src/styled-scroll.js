@@ -272,6 +272,10 @@
 			}
 		},
 
+        refresh: function() {
+        	// Stub so that native scrollbar refreshes are a noop  
+        },
+
 		destroy: function () {
 			if (this.scrollElement.removeEventListener) {
 				this.scrollElement.removeEventListener('scroll', this.scrollStartEnd);
