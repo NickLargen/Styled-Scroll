@@ -37,13 +37,16 @@
 	 * Pointer events include mouse and touch events so listening to everything can cause events to be received twice.
 	**/
 	var onlySupportsMSPointer = window.MSPointerEvent !== undefined && window.onpointerdown === undefined;
-
-	var pointerDown = onlySupportsMSPointer ? 'MSPointerDown' : 'pointerdown';
-	var pointerMove = onlySupportsMSPointer ? 'MSPointerMove' : 'pointermove';
-	var pointerUp = onlySupportsMSPointer ? 'MSPointerUp' : 'pointerup';
-	var pointerCancel = onlySupportsMSPointer ? 'MSPointerCancel' : 'pointercancel';
-
 	var supportsPointer = window.onpointerdown !== undefined || window.MSPointerEvent !== undefined;
+	
+	if (supportsPointer) {
+		var supportsSetPointerCapture = testDiv.setPointerCapture !== undefined;
+		
+		var pointerDown = onlySupportsMSPointer ? 'MSPointerDown' : 'pointerdown';
+		var pointerMove = onlySupportsMSPointer ? 'MSPointerMove' : 'pointermove';
+		var pointerUp = onlySupportsMSPointer ? 'MSPointerUp' : 'pointerup';
+		var pointerCancel = onlySupportsMSPointer ? 'MSPointerCancel' : 'pointercancel';
+	}
 
 	var startEvents = supportsPointer ? [pointerDown] : ['touchstart', 'mousedown'];
 	var moveEvents = supportsPointer ? [pointerMove] : ['touchmove', 'mousemove'];
@@ -225,7 +228,10 @@
 			this.thumb.style.position = 'relative';
 			// Thumb height calculations assume border-box
 			this.thumb.style.boxSizing = 'border-box';
-
+			// Bug fix for IE overscrolling the window instead of allowing scrolling with the thumb
+			this.thumb.style.msTouchAction = 'none';
+			this.thumb.style.touchAction = 'none';
+			
 			// Prevent invisible track from stealing mouse events.
 			this.track.style.pointerEvents = 'none';
 			this.thumb.style.pointerEvents = 'auto';
@@ -489,13 +495,19 @@
 
 				e.preventDefault();
 				e.stopPropagation();
+				
+				var moveTarget = document;
+				if (supportsSetPointerCapture) {
+					moveTarget = e.target;
+					moveTarget.setPointerCapture(e.pointerId);
+				}
 
 				for (var i = moveEvents.length; i--;) {
-					document.addEventListener(moveEvents[i], self.move);
+					moveTarget.addEventListener(moveEvents[i], self.move);
 				}
 
 				for (var i = endEvents.length; i--;) {
-					document.addEventListener(endEvents[i], self.end);
+					moveTarget.addEventListener(endEvents[i], self.end);
 				}
 			};
 
@@ -511,12 +523,13 @@
 			};
 
 			self.end = function (e) {
+				var moveTarget = supportsSetPointerCapture ? e.target : document;
 				for (var i = moveEvents.length; i--;) {
-					document.removeEventListener(moveEvents[i], self.move);
+					moveTarget.removeEventListener(moveEvents[i], self.move);
 				}
 
 				for (var i = endEvents.length; i--;) {
-					document.removeEventListener(endEvents[i], self.end);
+					moveTarget.removeEventListener(endEvents[i], self.end);
 				}
 			};
 
@@ -527,12 +540,14 @@
 
 		destroy: function () {
 			var self = this;
-			for (var i = moveEvents.length; i--;) {
-				document.removeEventListener(moveEvents[i], self.move);
-			}
+			if (!supportsSetPointerCapture) {
+				for (var i = moveEvents.length; i--;) {
+					document.removeEventListener(moveEvents[i], self.move);
+				}
 
-			for (var i = endEvents.length; i--;) {
-				document.removeEventListener(endEvents[i], self.end);
+				for (var i = endEvents.length; i--;) {
+					document.removeEventListener(endEvents[i], self.end);
+				}
 			}
 
 			var parent = this.track.parentNode;
