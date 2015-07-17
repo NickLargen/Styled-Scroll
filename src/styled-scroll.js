@@ -38,10 +38,10 @@
 	**/
 	var onlySupportsMSPointer = window.MSPointerEvent !== undefined && window.onpointerdown === undefined;
 	var supportsPointer = window.onpointerdown !== undefined || window.MSPointerEvent !== undefined;
-	
+
 	if (supportsPointer) {
 		var supportsSetPointerCapture = testDiv.setPointerCapture !== undefined;
-		
+
 		var pointerDown = onlySupportsMSPointer ? 'MSPointerDown' : 'pointerdown';
 		var pointerMove = onlySupportsMSPointer ? 'MSPointerMove' : 'pointermove';
 		var pointerUp = onlySupportsMSPointer ? 'MSPointerUp' : 'pointerup';
@@ -278,8 +278,8 @@
 			}
 		},
 
-        refresh: function() {
-        	// Stub so that native scrollbar refreshes are a noop  
+        refresh: function () {
+			// Stub so that native scrollbar refreshes are a noop  
         },
 
 		destroy: function () {
@@ -495,7 +495,7 @@
 
 				e.preventDefault();
 				e.stopPropagation();
-				
+
 				var moveTarget = document;
 				if (supportsSetPointerCapture) {
 					moveTarget = e.target;
