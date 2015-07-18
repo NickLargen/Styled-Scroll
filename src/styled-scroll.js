@@ -321,7 +321,7 @@
 
 			var refreshTriggers = self._options.refreshTriggers;
 			if (refreshTriggers.contentChange) {
-				if (supportsMutationObserver) self._observer._disconnect();
+				if (supportsMutationObserver) self._observer.disconnect();
 				else self._scrollElement.removeEventListener('DOMSubtreeModified', self.refresh);
 			}
 
@@ -396,7 +396,7 @@
 		self._thumbStyle = self._thumb.style;
 		self._scrollElement = styledScroll._scrollElement;
 		self._translateTrack = !!translateTrack;
-		self._disconnect = disconnect;
+		self._shouldDisconnect = disconnect;
 		self._isHidden = false;
 
 		self._scrollElement.addEventListener('scroll', self._scrollListener = function () { self._requestThumbUpdate(); });
@@ -445,13 +445,13 @@
 			if (clientHeight >= scrollHeight * 0.98) {
 				if (!self._isHidden) {
 					self._isHidden = true;
-					if (self._disconnect) self._track.parentNode.removeChild(self._track);
+					if (self._shouldDisconnect) self._track.parentNode.removeChild(self._track);
 					else self._track.style.visibility = 'hidden';
 				}
 				return;
 			} else if (self._isHidden) {
 				self._isHidden = false;
-				if (self._disconnect) self._scrollElement.parentNode.appendChild(self._track);
+				if (self._shouldDisconnect) self._scrollElement.parentNode.appendChild(self._track);
 				else self._track.style.visibility = 'visible';
 			}
 
