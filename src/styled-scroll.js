@@ -18,7 +18,10 @@
 		function (callback) { window.setTimeout(callback, 1000 / 60); };
 
 	var testDiv = document.createElement('div');
-	var transformPrefixed, isSupportedBrowser = testDiv.classList !== undefined && testDiv.addEventListener !== undefined;
+	testDiv.style.cssText = "visibility: hidden; width: 200px; height: 200px; overflow-y: scroll; -ms-overflow-style: scrollbar";
+	testDiv.class = 'hide-scrollbar';
+	var isSupportedBrowser = testDiv.classList !== undefined && testDiv.addEventListener !== undefined;
+	var transformPrefixed;
 	// webkitTransform is the only prefix we care about since IE9 is not supported
 	if ('transform' in testDiv.style) {
 		transformPrefixed = 'transform';
@@ -39,6 +42,7 @@
 	var onlySupportsMSPointer = window.MSPointerEvent !== undefined && window.onpointerdown === undefined;
 	var supportsPointer = window.onpointerdown !== undefined || window.MSPointerEvent !== undefined;
 
+	var startEvents, moveEvents, endEvents;
 	if (supportsPointer) {
 		var supportsSetPointerCapture = testDiv.setPointerCapture !== undefined;
 
@@ -46,11 +50,33 @@
 		var pointerMove = onlySupportsMSPointer ? 'MSPointerMove' : 'pointermove';
 		var pointerUp = onlySupportsMSPointer ? 'MSPointerUp' : 'pointerup';
 		var pointerCancel = onlySupportsMSPointer ? 'MSPointerCancel' : 'pointercancel';
+
+		startEvents = [pointerDown];
+		moveEvents = [pointerMove];
+		endEvents = [pointerUp, pointerCancel];
+	} else {
+		startEvents = ['touchstart', 'mousedown'];
+		moveEvents = ['touchmove', 'mousemove'];
+		endEvents = ['touchend', 'mouseup', 'touchcancel', 'mousecancel'];
 	}
 
-	var startEvents = supportsPointer ? [pointerDown] : ['touchstart', 'mousedown'];
-	var moveEvents = supportsPointer ? [pointerMove] : ['touchmove', 'mousemove'];
-	var endEvents = supportsPointer ? [pointerUp, pointerCancel] : ['touchend', 'mouseup', 'touchcancel', 'mousecancel'];
+
+	function addZoomTrigger() {
+		if (supportsEventConstructor) {
+			var zoomTrigger = document.createElement('iframe');
+			zoomTrigger.id = 'zoom-trigger';
+			zoomTrigger.style.cssText = 'width: 1;';
+			document.body.appendChild(zoomTrigger);
+			zoomTrigger.contentWindow.onresize = function () {
+				window.dispatchEvent(new Event('zoom'));
+			};
+
+			window.addEventListener('zoom', function () {
+				// Mark cached scrollbar width as invalid
+				scrollbarWidth = undefined;
+			});
+		}
+	}
 
 	function addResizeTrigger(element, callback) {
 		// Create an element that supports resize events with the same height  and width as the provided element
@@ -78,39 +104,14 @@
 		}
 	}
 
-	var scrollbarWidth = null;
-
-	//Source: http://stackoverflow.com/questions/13382516/getting-scroll-bar-width-using-javascript
+	var scrollbarWidth;
 	function getScrollbarWidth() {
-		// Known issue: scrollbar width changes on zoom on Firefox
-		if (scrollbarWidth) {
-			return scrollbarWidth;
+		if (scrollbarWidth === undefined) {
+			document.body.appendChild(testDiv);
+			scrollbarWidth = testDiv.offsetWidth - testDiv.clientWidth;
+			testDiv.parentNode.removeChild(testDiv);
 		}
 
-		var outer = document.createElement("div");
-		outer.style.visibility = "hidden";
-		outer.style.width = "100px";
-		outer.style.msOverflowStyle = "scrollbar"; // needed for WinJS apps
-		outer.classList.add('hide-scrollbar');
-
-		// Add hide-scrollbar class to compute width properly if it is used for removing scrollbars via css
-		document.body.appendChild(outer);
-
-		var widthNoScroll = outer.offsetWidth;
-		// force scrollbars
-		outer.style.overflow = "scroll";
-
-		// add innerdiv
-		var inner = document.createElement("div");
-		inner.style.width = "100%";
-		outer.appendChild(inner);
-
-		var widthWithScroll = inner.offsetWidth;
-
-		// remove divs
-		outer.parentNode.removeChild(outer);
-
-		scrollbarWidth = widthNoScroll - widthWithScroll;
 		return scrollbarWidth;
 	}
 
@@ -121,6 +122,7 @@
 	function StyledScroll(scrollElement, options) {
 		this.scrollElement = scrollElement;
 		this.options = options || {};
+		var self = this;
 		for (var property in defaultOptions) {
 			if (this.options[property] === undefined) this.options[property] = defaultOptions[property];
 		}
@@ -147,8 +149,11 @@
 		// Fall back to native scrolling if necessary features are not supported
 		if (!isSupportedBrowser) this.options.useNative = true;
 
-		if (!this.options.useNative) {
-			if (isUsingWidthHack === undefined) isUsingWidthHack = !supportsMsOverflowStyle && getScrollbarWidth() > 0;
+		if (!self.options.useNative) {
+			if (isUsingWidthHack === undefined) {
+				isUsingWidthHack = !supportsMsOverflowStyle && getScrollbarWidth() > 0;
+				if (isUsingWidthHack) addZoomTrigger();
+			}
 			// With custom dimensions the width cannot be changed to hide the scrollbar so just default to native scrolling (Firefox)
 			if (this.options.customDimensions && isUsingWidthHack) this.options.useNative = true;
 		}
@@ -167,11 +172,19 @@
 	StyledScroll.prototype = {
 
 		initScrollbar: function () {
+			var self = self;
+			var scrollElement = self.scrollElement;
+			
 			// Disable native scrollbar
 			this.scrollElement.classList.add('hide-scrollbar');
 			if (isUsingWidthHack) {
 				// Make the scrolling element larger than the containing element so that the scrollbar is hidden
-				this.scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px';
+				scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px)';
+				// Scrollbar width depends on zoom level
+				window.addEventListener('zoom', function () {
+					scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px)';
+				});
+				
 				// Prevent user from scrolling the scrollbar into view
 				this.scrollElement.offsetParent.style.overflowX = 'hidden';
 			} else if (supportsMsOverflowStyle) {
