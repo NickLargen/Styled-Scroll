@@ -9,16 +9,22 @@
 	};
 
 	var requestAnimationFrame = window.requestAnimationFrame ||
-		window.webkitRequestAnimationFrame ||
-		window.mozRequestAnimationFrame ||
-		window.oRequestAnimationFrame ||
-		window.msRequestAnimationFrame ||
 		function (callback) { window.setTimeout(callback, 1000 / 60); };
 
 	var testDiv = document.createElement('div');
 	testDiv.style.cssText = "visibility: hidden; width: 200px; height: 200px; overflow-y: scroll; -ms-overflow-style: scrollbar";
-	testDiv.class = 'hide-scrollbar';
-	var isSupportedBrowser = testDiv.classList !== undefined && testDiv.addEventListener !== undefined;
+	testDiv.className = 'hide-scrollbar';
+
+	var isSupportedBrowser = testDiv.classList !== undefined;
+	if (testDiv.addEventListener) {
+		var _addEventListener = function (target, type, listener) {
+			target.addEventListener(type, listener);
+		}
+		var _removeEventListener = function (target, type, listener) {
+			target.removeEventListener(type, listener);
+		}
+	} else isSupportedBrowser = false;
+
 	var transformPrefixed;
 	// webkitTransform is the only prefix we care about since IE9 is not supported
 	if ('transform' in testDiv.style) {
@@ -33,6 +39,8 @@
 	var supportsMsOverflowStyle = '-ms-overflow-style' in testDiv.style;
 	var supportsMutationObserver = window.MutationObserver !== undefined;
 	var supportsEventConstructor = typeof window.Event == "function";
+
+	
 
 	/** Detect what input events are supported in order to register listeners.
 	 * Pointer events include mouse and touch events so listening to everything can cause events to be received twice.
@@ -57,16 +65,16 @@
 		moveEvents = ['touchmove', 'mousemove'];
 		endEvents = ['touchend', 'mouseup', 'touchcancel', 'mousecancel'];
 	}
-	
+
 	function addEvents(target, types, listener) {
 		for (var i = types.length; i--;) {
-			target.addEventListener(types[i], listener);
+			_addEventListener(target, types[i], listener);
 		}
 	}
-	
+
 	function removeEvents(target, types, listener) {
 		for (var i = types.length; i--;) {
-			target.removeEventListener(types[i], listener);
+			_removeEventListener(target, types[i], listener);
 		}
 	}
 
@@ -80,7 +88,7 @@
 				window.dispatchEvent(new Event('zoom'));
 			};
 
-			window.addEventListener('zoom', function () {
+			_addEventListener(window, 'zoom', function () {
 				// Mark cached scrollbar width as invalid
 				scrollbarWidth = undefined;
 			});
@@ -88,6 +96,8 @@
 	}
 
 	function addResizeTrigger(element, callback) {
+		//TODO: adding multiple resize triggers to the same element
+		
 		// Create an element that supports resize events with the same height  and width as the provided element
 		// Changes to width need to be listened to because child elements may change height as their width changes
 		var resizeTrigger = document.createElement('iframe');
@@ -137,9 +147,6 @@
 		}
 
 		if (!self._options.customDimensions) {
-			// var parentMaxHeight = getComputedStyle(scrollElement.offsetParent).maxHeight; //seems to be slow
-			// TODO: Fix height calculation when the parent height is explicitly set as less than its max height and when the parent has borders
-			// self._scrollElement.style.maxHeight = (parentMaxHeight === 'none' || parentMaxHeight.indexOf('%') != -1) ? '100%' : parentMaxHeight;
 			self._scrollElement.style.maxHeight = '100%';
 		}
 
@@ -190,7 +197,7 @@
 				// Make the scrolling element larger than the containing element so that the scrollbar is hidden
 				scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px)';
 				// Scrollbar width depends on zoom level
-				window.addEventListener('zoom', function () {
+				_addEventListener(window, 'zoom', function () {
 					scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px)';
 				});
 				
@@ -215,7 +222,7 @@
 					self._observer = new MutationObserver(self.refresh);
 					self._observer.observe(scrollElement, { attributes: true, childList: true, subtree: true });
 				} else {
-					scrollElement.addEventListener('DOMSubtreeModified', self.refresh);
+					_addEventListener(scrollElement, 'DOMSubtreeModified', self.refresh);
 					console.log('Mutation observer support not detected, falling back to mutation events. Please verify your browser is up to date.');
 				}
 			}
@@ -227,7 +234,7 @@
 			}
 
 			if (self._options.refreshTriggers.windowResize) {
-				window.addEventListener('resize', self.refresh);
+				_addEventListener(window, 'resize', self.refresh);
 			}
 
 			var pollInterval = self._options.refreshTriggers.poll;
@@ -261,7 +268,7 @@
 
 			if (supportsEventConstructor) {
 				var wheelTarget = this._scrollElement;
-				track.addEventListener('wheel', function (event) {
+				_addEventListener(track, 'wheel', function (event) {
 					var clone = new WheelEvent(event.type, event);
 					wheelTarget.dispatchEvent(clone);
 				});
@@ -295,8 +302,8 @@
 					}
 				};
 
-				if (self._scrollElement.addEventListener) {
-					self._scrollElement.addEventListener('scroll', self._onScroll);
+				if (_addEventListener) {
+					_addEventListener(self._scrollElement, 'scroll', self._onScroll);
 				} else self._scrollElement.onscroll = self._onScroll;
 			}
 		},
@@ -307,8 +314,8 @@
 
 		destroy: function () {
 			var self = this;
-			if (self._scrollElement.removeEventListener) {
-				self._scrollElement.removeEventListener('scroll', self._onScroll);
+			if (_removeEventListener) {
+				_removeEventListener(self._scrollElement, 'scroll', self._onScroll);
 			} else self._scrollElement.onscroll = null;
 
 			if (self._options.useNative) return;
@@ -322,7 +329,7 @@
 			var refreshTriggers = self._options.refreshTriggers;
 			if (refreshTriggers.contentChange) {
 				if (supportsMutationObserver) self._observer.disconnect();
-				else self._scrollElement.removeEventListener('DOMSubtreeModified', self.refresh);
+				else _removeEventListener(self._scrollElement, 'DOMSubtreeModified', self.refresh);
 			}
 
 			if (refreshTriggers.elementResize) {
@@ -330,7 +337,7 @@
 			}
 
 			if (refreshTriggers.windowResize) {
-				window.removeEventListener('resize', self.refresh);
+				_removeEventListener(window, 'resize', self.refresh);
 			}
 
 			if (refreshTriggers.poll) {
@@ -374,17 +381,17 @@
 			}
 
 			var functionArgs = new Array(arguments.length - 1);
-			for (var argIndex = 1; argIndex < arguments.length; argIndex++) {
+			for (var argIndex = arguments.length; argIndex-- > 1;) {
 				functionArgs[argIndex - 1] = arguments[argIndex];
 			}
 
-			for (var funIndex = 0; funIndex < numFunctions; funIndex++) {
+			for (var funIndex = numFunctions; funIndex--;) {
 				eventFunctions[funIndex].apply(this, functionArgs);
 			}
 		},
-		
+
 		getScrollableElement: function () {
-			return this._scrollElement
+			return this._scrollElement;
 		}
 	};
 
@@ -399,7 +406,7 @@
 		self._shouldDisconnect = disconnect;
 		self._isHidden = false;
 
-		self._scrollElement.addEventListener('scroll', self._scrollListener = function () { self._requestThumbUpdate(); });
+		_addEventListener(self._scrollElement, 'scroll', self._scrollListener = function () { self._requestThumbUpdate(); });
 
 		self._lastMouseY = 0;
 		self._initThumbEvents();
@@ -567,7 +574,7 @@
 			if (parent) parent.removeChild(self._track);
 			self._track = null;
 			self._thumb = null;
-			self._scrollElement.removeEventListener('scroll', self._scrollListener);
+			_removeEventListener(self._scrollElement, 'scroll', self._scrollListener);
 		}
 	};
 

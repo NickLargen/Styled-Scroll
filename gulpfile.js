@@ -45,7 +45,7 @@ function manualMinify(file, encoding, callback) {
     var toplevel_ast = UglifyJS.parse(String(file.contents));
     toplevel_ast.figure_out_scope();
 
-    var compressor = UglifyJS.Compressor({ drop_console: true });
+    var compressor = UglifyJS.Compressor({ drop_console: true, hoist_vars: true });
     var compressed_ast = toplevel_ast.transform(compressor);
     compressed_ast.figure_out_scope();
     compressed_ast.compute_char_frequency();
