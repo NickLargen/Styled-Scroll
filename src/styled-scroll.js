@@ -101,7 +101,7 @@
 		// Create an element that supports resize events with the same height  and width as the provided element
 		// Changes to width need to be listened to because child elements may change height as their width changes
 		var resizeTrigger = document.createElement('iframe');
-		resizeTrigger.setAttribute('style', 'position: absolute; top: 0; right: 0; bottom: 0; left: 0; border: none; pointer-events: none; visibility: hidden; z-index: -2147483648;');
+		resizeTrigger.setAttribute('style', 'position:absolute;top:0;left:0;height:100%;width:100%;border:none;pointer-events:none;visibility:hidden;z-index:-2147483648;');
 
 		resizeTrigger.onload = function () {
 			if (resizeTrigger.contentWindow) {
