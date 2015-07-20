@@ -44,8 +44,8 @@
                     addRows.click();
                 }
                 
-                var styledScroll = new StyledScroll(ul, {disconnectScrollbar: true}, {sameDimensions: true});
-                new StyledScroll(document.getElementById('static-list')).on('scrollStart', function () {
+                var styledScroll = new StyledScroll(ul, {disconnectScrollbar: true});
+                new StyledScroll(document.getElementById('static-list'), {sameDimensions: true}).on('scrollStart', function () {
                     console.log('Scroll started.');
                 });;
                 new StyledScroll(document.getElementById('border-content'));
