@@ -66,11 +66,11 @@ button:hover {
 }
 
 #elementToScroll {
-    top:300px;
-    left:50px; 
+    top:25px;
+    left:25px; 
     text-align: left;
-    height:50%;
-    right: 50px; 
+    height:90%;
+    right: 10px; 
     position: absolute;
 }
 

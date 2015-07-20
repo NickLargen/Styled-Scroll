@@ -459,6 +459,7 @@
 
 		_updateScrollbar: function () {
 			var self = this;
+			
 			var scrollHeight = self._scrollElement.scrollHeight;
 			var clientHeight = self._scrollElement.clientHeight;
 
@@ -466,15 +467,23 @@
 			// This is very important because IE <= 11 incorrectly calculates scrollHeight (observed up to 101% of actual value)
 			if (clientHeight >= scrollHeight * 0.98) {
 				if (!self._isHidden) {
+					if (self._shouldDisconnect) {
+						// Skip removal if something else has already removed it
+						if (self._track.parentNode) self._track.parentNode.removeChild(self._track);
+					} else self._track.style.visibility = 'hidden';
 					self._isHidden = true;
-					if (self._shouldDisconnect) self._track.parentNode.removeChild(self._track);
-					else self._track.style.visibility = 'hidden';
 				}
 				return;
 			} else if (self._isHidden) {
-				self._isHidden = false;
-				if (self._shouldDisconnect) self._scrollElement.parentNode.appendChild(self._track);
-				else self._track.style.visibility = 'visible';
+				if (self._shouldDisconnect) {
+					if (self._scrollElement.parentNode) {
+						self._scrollElement.parentNode.appendChild(self._track);
+						self._isHidden = false;
+					}
+				} else {
+					self._track.style.visibility = 'visible';
+					self._isHidden = false;
+				}
 			}
 
 			var availableTrackHeight = self._calculateAvailableTrackHeight(clientHeight);
@@ -518,8 +527,11 @@
 		},
 		
 		_translateTrack: function () {
+			var parent = this._scrollElement.parentNode;
+			if (!parent) return;
+			var parentCompStyle = getComputedStyle(parent);
+			
 			var scrollCompStyle = getComputedStyle(this._scrollElement);
-			var parentCompStyle = getComputedStyle(this._scrollElement.parentNode);
 			var translation = '';
 
 			if (!this._options.sameClientWidth) {

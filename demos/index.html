@@ -39,20 +39,22 @@
                     }
                 };
                 
-    
-                for (var i = 0; i < 2; i++) {
+                for (var i = 0; i < 1; i++) {
                     addRows.click();
                 }
                 
                 var styledScroll = new StyledScroll(ul, {disconnectScrollbar: true});
-                new StyledScroll(document.getElementById('static-list'), {sameDimensions: true}).on('scrollStart', function () {
-                    console.log('Scroll started.');
+                new StyledScroll(document.getElementById('static-list'), {sameDimensions: true}).on('scrollEnd', function () {
+                    console.log('Finished scrolling.');
                 });;
                 new StyledScroll(document.getElementById('border-content'));
                 new StyledScroll(document.getElementById('max-height-content'));
                 
+                   var scrollbar = styledScroll._scrollbar;    
                 document.getElementById('destroy').onclick = function () {
-                    styledScroll.destroy();    
+                    styledScroll.destroy();
+                    console.log(scrollbar._requestUpdate)
+                    scrollbar._requestUpdate();
                 };
                 
                 // styledScroll.on('scrollStart', function () {
@@ -70,7 +72,7 @@
                 /* Add elements every frame */
                 // window.requestAnimationFrame(function createNewElements() { 
                 //     requestAnimationFrame(createNewElements);
-                //     header.onclick();
+                //     addRows.onclick();
                 // });
             }
         </script>
