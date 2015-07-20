@@ -19,10 +19,10 @@
 	if (testDiv.addEventListener) {
 		var _addEventListener = function (target, type, listener) {
 			target.addEventListener(type, listener);
-		}
+		};
 		var _removeEventListener = function (target, type, listener) {
 			target.removeEventListener(type, listener);
-		}
+		};
 	} else isSupportedBrowser = false;
 
 	var transformPrefixed;
@@ -217,9 +217,6 @@
 			// Ensure the parent is positioned so that the scrollbars can be correctly placed
 			if (parent !== scrollElement.offsetParent) parent.style.position = 'relative';
 
-			// Create a new scrollbar 
-			self._createTrack();
-			scrollElement.parentNode.appendChild(self._track);
 			var scrollbar = self._scrollbar = new Scrollbar(self);
 
 			self.refresh = function () {
@@ -256,37 +253,7 @@
 
 			self.refresh();
 		},
-
-		_createTrack: function () {
-			var track = this._track = document.createElement('div');
-			var thumb = this._thumb = document.createElement('div');
-
-			track.className = 'styled-scroll-track';
-			track.style.position = 'absolute';
-
-			thumb.className = 'styled-scroll-thumb';
-			thumb.style.position = 'relative';
-			// Thumb height calculations assume border-box
-			thumb.style.boxSizing = 'border-box';
-			// Bug fix for IE overscrolling the window instead of allowing scrolling with the thumb
-			thumb.style.msTouchAction = 'none';
-			thumb.style.touchAction = 'none';
-			
-			// Prevent invisible track from stealing mouse events.
-			track.style.pointerEvents = 'none';
-			thumb.style.pointerEvents = 'auto';
-
-			if (supportsEventConstructor) {
-				var wheelTarget = this._scrollElement;
-				_addEventListener(track, 'wheel', function (event) {
-					var clone = new WheelEvent(event.type, event);
-					wheelTarget.dispatchEvent(clone);
-				});
-			}
-
-			track.appendChild(thumb);
-		},
-
+		
         refresh: function () {
 			// Stub so that native scrollbar refreshes are a noop  
         },
@@ -324,8 +291,6 @@
 				clearInterval(self._pollIntervalId);
 			}
 
-			self._track = null;
-			self._thumb = null;
 			self.refresh = null;
 
 			self._scrollbar._destroy();
@@ -397,16 +362,29 @@
 
 		getScrollElement: function () {
 			return this._scrollElement;
+		},
+		
+		getTrack: function () {
+			return this._scrollbar ? this._scrollbar._track : null;	
+		},
+		
+		getThumb: function () {
+			return this._scrollbar ? this._scrollbar._thumb : null;	
 		}
 	};
 
 	/* ========================= CLASS SCROLLBAR ========================= */
 	function Scrollbar(styledScroll) {
 		var self = this;
-
-		Object.keys(styledScroll).forEach(function (property) {
-			self[property] = styledScroll[property]
-		});
+		
+		self._scrollElement = styledScroll._scrollElement;
+		self._options = styledScroll._options;
+		// Object.keys(styledScroll).forEach(function (property) {
+		// 	self[property] = styledScroll[property];
+		// });
+		
+		self._createTrack();
+		self._scrollElement.parentNode.appendChild(self._track);
 
 		self._thumbStyle = self._thumb.style;
 		self._shouldDisconnect = self._options.disconnectScrollbar;
@@ -423,6 +401,37 @@
 	}
 
 	Scrollbar.prototype = {
+		
+		_createTrack: function () {
+			var track = this._track = document.createElement('div');
+			var thumb = this._thumb = document.createElement('div');
+
+			track.className = 'styled-scroll-track';
+			track.style.position = 'absolute';
+
+			thumb.className = 'styled-scroll-thumb';
+			thumb.style.position = 'relative';
+			// Thumb height calculations assume border-box
+			thumb.style.boxSizing = 'border-box';
+			// Bug fix for IE overscrolling the window instead of allowing scrolling with the thumb
+			thumb.style.msTouchAction = 'none';
+			thumb.style.touchAction = 'none';
+			
+			// Prevent invisible track from stealing mouse events.
+			track.style.pointerEvents = 'none';
+			thumb.style.pointerEvents = 'auto';
+
+			if (supportsEventConstructor) {
+				var wheelTarget = this._scrollElement;
+				_addEventListener(track, 'wheel', function (event) {
+					var clone = new WheelEvent(event.type, event);
+					wheelTarget.dispatchEvent(clone);
+				});
+			}
+
+			track.appendChild(thumb);
+		},
+
 		_requestUpdate: function () {
 			this._isScrollbarInvalidated = true;
 			this._requestThumbUpdate();
