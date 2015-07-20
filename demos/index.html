@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
     
     <head>
@@ -9,6 +9,13 @@
         
         <script type="text/javascript">
             function loaded() {
+                
+                // window.StyledScroll.xx = '342421241232543534534534534534634634235235412424'
+                // console.log(window.StyledScroll.xx)
+                // console.log(Object.keys(window.StyledScroll))
+                // console.log(window.StyledScroll.defaultOptions)
+                // console.log(StyledScroll.defaultOptions.useNative)
+//                 console.log(StyledScroll.defaultOptions.useNative = true)
                 var ul = document.getElementById('elementToScroll');
         
                 var addRows = document.getElementById('add-rows');
@@ -37,9 +44,11 @@
                     addRows.click();
                 }
                 
-                var styledScroll = new StyledScroll(ul, {disconnectScrollbar: true});
-                new StyledScroll(document.getElementById('static-list'));
-                new StyledScroll(document.getElementById('border-content'), {customDimensions: true});
+                var styledScroll = new StyledScroll(ul, {disconnectScrollbar: true}, {sameDimensions: true});
+                new StyledScroll(document.getElementById('static-list')).on('scrollStart', function () {
+                    console.log('Scroll started.');
+                });;
+                new StyledScroll(document.getElementById('border-content'));
                 new StyledScroll(document.getElementById('max-height-content'));
                 
                 document.getElementById('destroy').onclick = function () {
@@ -67,6 +76,7 @@
         </script>
         <link rel="stylesheet" type="text/css" href="../demos/styles.css">
         <script type="text/javascript" src="../src/styled-scroll.js"></script>
+        <!--<script type="text/javascript" src="../dist/styled-scroll.min.js"></script>-->
     </head>
     
     <body onload="loaded()">

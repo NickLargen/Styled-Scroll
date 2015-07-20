@@ -66,7 +66,12 @@ button:hover {
 }
 
 #elementToScroll {
+    top:300px;
+    left:50px; 
     text-align: left;
+    height:50%;
+    right: 50px; 
+    position: absolute;
 }
 
 #elementToScroll > li {
@@ -153,7 +158,6 @@ button:hover {
     top: 2px;
     right: 0;
     bottom: 2px;
-    
     width: 21px; 
     padding: 0px 2px;
     box-sizing: border-box;

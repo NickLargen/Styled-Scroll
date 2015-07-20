@@ -1,7 +1,7 @@
 (function (window, document, undefined) {
 	'use strict';
 
-	var defaultOptions = {
+	StyledScroll.defaultOptions = {
 		refreshTriggers: {
 			contentChange: true,
 			elementResize: true
@@ -141,25 +141,30 @@
 	function StyledScroll(scrollElement, options) {
 		var self = this;
 		self._scrollElement = scrollElement;
+		var parent = scrollElement.parentNode;
 		self._options = options || {};
-		for (var property in defaultOptions) {
-			if (self._options[property] === undefined) self._options[property] = defaultOptions[property];
+		for (var property in StyledScroll.defaultOptions) {
+			if (self._options[property] === undefined) self._options[property] = StyledScroll.defaultOptions[property];
 		}
 
-		if (!self._options.customDimensions) {
-			self._scrollElement.style.maxHeight = '100%';
+		if (scrollElement.clientHeight > parent.clientHeight || getComputedStyle(scrollElement).maxHeight === 'none') {
+			scrollElement.style.maxHeight = '100%';
+		}
+			
+		if (self._options.sameDimensions) {
+			self._options.sameClientWidth = self._options.sameClientHeight = true;
 		}
 
 		if (supportsWebkitOverflowScrolling) {
 			// Touch webkitOverflowScrolling enables momentum which is required for a good user experience
-			self._scrollElement.style.webkitOverflowScrolling = 'touch';
+			scrollElement.style.webkitOverflowScrolling = 'touch';
 			// IOS does not supprt hiding scrollbars with touch overflow scrolling so revert to native 
 			self._options.useNative = true;
 
 			// Work around for IOS 8 issue with webkitOverflowScrolling where dynamically adding content does not immediately allow scrolling
 			var scrollForcer = document.createElement('div');
-			scrollForcer.setAttribute('style', 'position: absolute; height: calc(100% + 1px); width: 1px; top: 0; left: 0; visibility: hidden');
-			self._scrollElement.appendChild(scrollForcer);
+			scrollForcer.setAttribute('style', 'position:absolute;height:calc(100% + 1px);width:1px;top:0;left:0;visibility:hidden');
+			scrollElement.appendChild(scrollForcer);
 		}
 
 		// Fall back to native scrolling if necessary features are not supported
@@ -171,14 +176,14 @@
 				if (isUsingWidthHack) addZoomTrigger();
 			}
 			// With custom dimensions the width cannot be changed to hide the scrollbar so just default to native scrolling (Firefox)
-			if (self._options.customDimensions && isUsingWidthHack) self._options.useNative = true;
+			if (!self._options.sameClientWidth && isUsingWidthHack) self._options.useNative = true;
 		}
 
 		if (self._options.useNative) {
-			self._scrollElement.style.overflowY = 'auto';
+			scrollElement.style.overflowY = 'auto';
 		} else {
 			// Permanent scrollbars prevents unnecessary repaints when the scrollbar would no longer be needed
-			self._scrollElement.style.overflowY = 'scroll';
+			scrollElement.style.overflowY = 'scroll';
 			self._initScrollbar();
 		}
 
@@ -191,6 +196,7 @@
 		_initScrollbar: function () {
 			var self = this;
 			var scrollElement = self._scrollElement;
+			var parent = scrollElement.parentNode;
 			
 			// Disable native scrollbar
 			scrollElement.classList.add('hide-scrollbar');
@@ -203,15 +209,18 @@
 				});
 				
 				// Prevent user from scrolling the scrollbar into view
-				scrollElement.offsetParent.style.overflowX = 'hidden';
+				parent.style.overflowX = 'hidden';
 			} else if (supportsMsOverflowStyle) {
 				scrollElement.style.msOverflowStyle = 'none';
 			}
+			
+			// Ensure the parent is positioned so that the scrollbars can be correctly placed
+			if (parent !== scrollElement.offsetParent) parent.style.position = 'relative';
 
 			// Create a new scrollbar 
 			self._createTrack();
 			scrollElement.parentNode.appendChild(self._track);
-			var scrollbar = self._scrollbar = new Scrollbar(self, self._options.customDimensions, self._options.disconnectScrollbar);
+			var scrollbar = self._scrollbar = new Scrollbar(self);
 
 			self.refresh = function () {
 				scrollbar._requestUpdate();
@@ -386,20 +395,21 @@
 			}
 		},
 
-		getScrollableElement: function () {
+		getScrollElement: function () {
 			return this._scrollElement;
 		}
 	};
 
 	/* ========================= CLASS SCROLLBAR ========================= */
-	function Scrollbar(styledScroll, translateTrack, disconnect) {
+	function Scrollbar(styledScroll) {
 		var self = this;
-		self._track = styledScroll._track;
-		self._thumb = styledScroll._thumb;
+
+		Object.keys(styledScroll).forEach(function (property) {
+			self[property] = styledScroll[property]
+		});
+
 		self._thumbStyle = self._thumb.style;
-		self._scrollElement = styledScroll._scrollElement;
-		self._translateTrack = !!translateTrack;
-		self._shouldDisconnect = disconnect;
+		self._shouldDisconnect = self._options.disconnectScrollbar;
 		self._isHidden = false;
 
 		_addEventListener(self._scrollElement, 'scroll', self._scrollListener = function () { self._requestThumbUpdate(); });
@@ -408,7 +418,7 @@
 		self._initThumbEvents();
 	}
 
-	function getStyleValue(style) {
+	function getStyleFloat(style) {
 		return parseFloat(style) || 0;
 	}
 
@@ -459,6 +469,7 @@
 			}
 
 			var availableTrackHeight = self._calculateAvailableTrackHeight(clientHeight);
+			if (!self._options.sameDimensions) self._translateTrack();
 
 			var thumbHeight = availableTrackHeight * clientHeight / scrollHeight;
 			//A quick benchmark showed Math.max performance to be worse than an if statement on IE11
@@ -478,30 +489,44 @@
 			var availableTrackHeight;
 			var trackCompStyle = getComputedStyle(this._track);
 			var thumbCompStyle = getComputedStyle(this._thumb);
-
-			if (this._translateTrack) {
-				var trackTop = getStyleValue(trackCompStyle.top),
-					trackBottom = getStyleValue(trackCompStyle.bottom),
-					borderTop = getStyleValue(trackCompStyle.borderTopWidth),
-					borderBottom = getStyleValue(trackCompStyle.borderBottomWidth);
+			
+			if (this._options.sameClientHeight) {
+				availableTrackHeight = this._track.clientHeight;
+			} else {
+				var trackTop = getStyleFloat(trackCompStyle.top);
+				var trackBottom = getStyleFloat(trackCompStyle.bottom);
+				var borderTop = getStyleFloat(trackCompStyle.borderTopWidth);
+				var borderBottom = getStyleFloat(trackCompStyle.borderBottomWidth);
 
 				this._track.style.height = clientHeight - trackTop - trackBottom + 'px';
 				availableTrackHeight = clientHeight - trackTop - borderTop - trackBottom - borderBottom;
-
-				// Translate the scrollbar from the right of the parent div to the right of the scrolled div
-				var scrollCompStyle = getComputedStyle(this._scrollElement);
-				var parentCompStyle = getComputedStyle(this._scrollElement.offsetParent);
-				var rightOffset = getStyleValue(scrollCompStyle.borderRightWidth) + getStyleValue(scrollCompStyle.marginRight) + getStyleValue(parentCompStyle.paddingRight);
-				var topOffset = getStyleValue(scrollCompStyle.borderTopWidth) + getStyleValue(scrollCompStyle.marginTop) + getStyleValue(parentCompStyle.paddingTop);
-				this._track.style[transformPrefixed] = 'translate(-' + rightOffset + 'px,' + topOffset + 'px)';
-			} else {
-				availableTrackHeight = this._track.clientHeight;
 			}
-
-			availableTrackHeight -= getStyleValue(thumbCompStyle.top) + getStyleValue(thumbCompStyle.bottom);
-			availableTrackHeight -= getStyleValue(trackCompStyle.paddingTop) + getStyleValue(trackCompStyle.paddingBottom);
+			
+			availableTrackHeight -= getStyleFloat(thumbCompStyle.top) + getStyleFloat(thumbCompStyle.bottom);
+			availableTrackHeight -= getStyleFloat(trackCompStyle.paddingTop) + getStyleFloat(trackCompStyle.paddingBottom);
 
 			return availableTrackHeight;
+		},
+		
+		_translateTrack: function () {
+			var scrollCompStyle = getComputedStyle(this._scrollElement);
+			var parentCompStyle = getComputedStyle(this._scrollElement.parentNode);
+			var translation = '';
+
+			if (!this._options.sameClientWidth) {
+				// Translate the scrollbar from the right of the parent div to the right of the scrolled div
+				var rightOffset = getStyleFloat(scrollCompStyle.right) + getStyleFloat(scrollCompStyle.borderRightWidth) + getStyleFloat(scrollCompStyle.marginRight) + getStyleFloat(parentCompStyle.paddingRight);
+
+				translation += 'translateX(' + -1 * rightOffset + 'px)';
+			}
+			
+			if (!this._options.sameClientHeight) {
+				var topOffset = getStyleFloat(scrollCompStyle.top) + getStyleFloat(scrollCompStyle.borderTopWidth) + getStyleFloat(scrollCompStyle.marginTop) + getStyleFloat(parentCompStyle.paddingTop);
+				
+				translation += 'translateY(' + topOffset + 'px)';
+			}
+			
+			if (translation) this._track.style[transformPrefixed] = translation;
 		},
 
 		// Calculate the percentage that the element is currently scrolled and multiply it by the length the thumb can scroll
