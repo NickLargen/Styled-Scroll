@@ -87,14 +87,14 @@ Default: `{ contentChange: true, elementResize: true }`
     
 Omitted properties will not be used. To handle all refreshes yourself use `refreshTriggers: {}`.
 
-##### scrollEvents
-Boolean. Will cause `scrollStart` and `scrollEnd` events to be triggered at the appropriate time. Events can be registered and removed using the `on(event, function)` and `off(event, function)` methods that take a single event name and the function to be executed as parameters. Example usage: `scroller.on('scrollStart', function () { console.log('Scrolling started!'); });`.
-
 ##### useNative
 Boolean. Creates a standard StyledScroll object but does not replace the native scrollbar with a styled one. This can be useful for using native scrollbars on specific platforms and still offers event callbacks for scrollStart and scrollEnd. This will be set to true if used on an unsupported platform.
 
 ##### disconnectScrollbar
 Boolean. The track will be removed from the dom when it does not need to be displayed instead of changing that track's `visible` css. The same track will be reinserted if the scrollbar should reappear.
+
+<h2 id='events'>Events</h2>
+StyledScroll triggers `scrollStart` and `scrollEnd` events at the appropriate time. Events can be registered and removed using the `on(event, function)` and `off(event, function)` methods that take a single event name and the function to be executed as parameters. Example usage: `scroller.on('scrollStart', function () { console.log('Scrolling started!'); });`.
 
 ## Versioning
 Styled Scroll is maintained under [the Semantic Versioning guidelines](http://semver.org/).

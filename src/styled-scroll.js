@@ -182,7 +182,8 @@
 			self._initScrollbar();
 		}
 
-		self._initEvents();
+		// Create storage for events that can be registered
+		self._events = {};
 	}
 
 	StyledScroll.prototype = {
@@ -277,54 +278,24 @@
 			track.appendChild(thumb);
 		},
 
-		_initEvents: function () {
-			var self = this;
-			// Create storage for events that can be registered
-			self._events = {};
-
-			if (self._options.scrollEvents) {
-				self._onScroll = function () {
-					self._hasScrolledRecently = true;
-					if (!self._isScrolling) {
-						self._isScrolling = true;
-						self.triggerEvent('scrollStart');
-
-						// Create a timer that marks scrolling as ended if a scroll event has not occured within some timeout
-						var intervalId = setInterval(function checkIfScrolled() {
-							if (self._hasScrolledRecently) {
-								self._hasScrolledRecently = false;
-							} else {
-								clearInterval(intervalId);
-								self._isScrolling = false;
-								self.triggerEvent('scrollEnd');
-							}
-						}, 200);
-					}
-				};
-
-				if (_addEventListener) {
-					_addEventListener(self._scrollElement, 'scroll', self._onScroll);
-				} else self._scrollElement.onscroll = self._onScroll;
-			}
-		},
-
         refresh: function () {
 			// Stub so that native scrollbar refreshes are a noop  
         },
 
 		destroy: function () {
 			var self = this;
-			if (_removeEventListener) {
-				_removeEventListener(self._scrollElement, 'scroll', self._onScroll);
-			} else self._scrollElement.onscroll = null;
-
-			if (self._options.useNative) return;
 
 			if (self._isDestroyed) {
 				console.warn('Attempted to destroy an already destroyed Styled Scroll object, ignoring request.');
 				return;
 			}
 			self._isDestroyed = true;
+			
+			if (_removeEventListener) {
+				_removeEventListener(self._scrollElement, 'scroll', self._onScroll);
+			} else self._scrollElement.onscroll = null;
+
+			if (self._options.useNative) return;
 
 			var refreshTriggers = self._options.refreshTriggers;
 			if (refreshTriggers.contentChange) {
@@ -354,11 +325,36 @@
 		},
 
 		on: function (type, fn) {
-			if (!this._events[type]) {
-				this._events[type] = [];
+			var self = this;
+			if (!self._onScroll && (type === 'scrollStart' || type === 'scrollEnd')) {
+				self._onScroll = function () {
+					self._hasScrolledRecently = true;
+					if (!self._isScrolling) {
+						self._isScrolling = true;
+						self.triggerEvent('scrollStart');
+
+						// Create a timer that marks scrolling as ended if a scroll event has not occured within some timeout
+						var intervalId = setInterval(function checkIfScrolled() {
+							if (self._hasScrolledRecently) {
+								self._hasScrolledRecently = false;
+							} else {
+								clearInterval(intervalId);
+								self._isScrolling = false;
+								self.triggerEvent('scrollEnd');
+							}
+						}, 200);
+					}
+				};
+				if (_addEventListener) {
+					_addEventListener(self._scrollElement, 'scroll', self._onScroll);
+				} else self._scrollElement.onscroll = self._onScroll;
 			}
 
-			this._events[type].push(fn);
+			if (!self._events[type]) {
+				self._events[type] = [];
+			}
+
+			self._events[type].push(fn);
 		},
 
 		off: function (type, fn) {
