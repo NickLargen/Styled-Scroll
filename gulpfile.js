@@ -76,6 +76,8 @@ function minify() {
         .pipe($.size({ title: 'Minified' }))
         .pipe($.sourcemaps.write('.'))
         .pipe(gulp.dest('dist'))
+        .pipe($.gzip())
+        .pipe($.size({ title: 'Gzipped', showFiles: true }))
 };
 
 function bump(bumpType) {
