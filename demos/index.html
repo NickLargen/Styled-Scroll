@@ -39,7 +39,7 @@
                     }
                 };
                 
-                for (var i = 0; i < 1; i++) {
+                for (var i = 0; i < 10; i++) {
                     addRows.click();
                 }
                 
@@ -50,11 +50,8 @@
                 new StyledScroll(document.getElementById('border-content'));
                 new StyledScroll(document.getElementById('max-height-content'));
                 
-                   var scrollbar = styledScroll._scrollbar;    
                 document.getElementById('destroy').onclick = function () {
                     styledScroll.destroy();
-                    console.log(scrollbar._requestUpdate)
-                    scrollbar._requestUpdate();
                 };
                 
                 // styledScroll.on('scrollStart', function () {
@@ -65,9 +62,9 @@
                 // });
                 
                 /* Create a large number of StyledScrolls to check performance */
-                // for(var i = 0; i < 50; i++) {
-                //     new StyledScroll(ul.children[i]);
-                // }
+                for(var i = 0; i < 50; i++) {
+                    new StyledScroll(ul.children[i], {sameDimensions: true});
+                }
                 
                 /* Add elements every frame */
                 // window.requestAnimationFrame(function createNewElements() { 

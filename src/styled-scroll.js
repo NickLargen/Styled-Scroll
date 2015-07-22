@@ -77,9 +77,12 @@
 			_removeEventListener(target, types[i], listener);
 		}
 	}
-
+	
+	var hasZoomTrigger;
 	function addZoomTrigger() {
-		if (supportsEventConstructor) {
+		if (supportsEventConstructor && !hasZoomTrigger) {
+			hasZoomTrigger = true;
+			
 			var zoomTrigger = document.createElement('iframe');
 			zoomTrigger.id = 'zoom-trigger';
 			zoomTrigger.style.cssText = 'width: 1;';
@@ -96,8 +99,6 @@
 	}
 
 	function addResizeTrigger(element, callback) {
-		//TODO: adding multiple resize triggers to the same element
-		
 		// Create an element that supports resize events with the same height  and width as the provided element
 		// Changes to width need to be listened to because child elements may change height as their width changes
 		var resizeTrigger = document.createElement('iframe');
@@ -140,8 +141,8 @@
 	/* ========================= CLASS STYLED SCROLL ========================= */
 	function StyledScroll(scrollElement, options) {
 		var self = this;
-		self._scrollElement = scrollElement;
 		var parent = scrollElement.parentNode;
+		self._scrollElement = scrollElement;
 		self._options = options || {};
 		for (var property in StyledScroll.defaultOptions) {
 			if (self._options[property] === undefined) self._options[property] = StyledScroll.defaultOptions[property];
@@ -155,35 +156,16 @@
 			self._options.sameClientWidth = self._options.sameClientHeight = true;
 		}
 
-		if (supportsWebkitOverflowScrolling) {
-			// Touch webkitOverflowScrolling enables momentum which is required for a good user experience
-			scrollElement.style.webkitOverflowScrolling = 'touch';
-			// IOS does not supprt hiding scrollbars with touch overflow scrolling so revert to native 
-			self._options.useNative = true;
-
-			// Work around for IOS 8 issue with webkitOverflowScrolling where dynamically adding content does not immediately allow scrolling
-			var scrollForcer = document.createElement('div');
-			scrollForcer.setAttribute('style', 'position:absolute;height:calc(100% + 1px);width:1px;top:0;left:0;visibility:hidden');
-			scrollElement.appendChild(scrollForcer);
-		}
-
-		// Fall back to native scrolling if necessary features are not supported
-		if (!isSupportedBrowser) self._options.useNative = true;
-
-		if (!self._options.useNative) {
-			if (isUsingWidthHack === undefined) {
-				isUsingWidthHack = !supportsMsOverflowStyle && getScrollbarWidth() > 0;
-				if (isUsingWidthHack) addZoomTrigger();
-			}
-			// With custom dimensions the width cannot be changed to hide the scrollbar so just default to native scrolling (Firefox)
-			if (!self._options.sameClientWidth && isUsingWidthHack) self._options.useNative = true;
-		}
+		self._options.useNative = self._options.useNative || self._needToUseNative();
 
 		if (self._options.useNative) {
 			scrollElement.style.overflowY = 'auto';
 		} else {
 			// Permanent scrollbars prevents unnecessary repaints when the scrollbar would no longer be needed
 			scrollElement.style.overflowY = 'scroll';
+
+			if (isUsingWidthHack && !hasZoomTrigger) addZoomTrigger();
+
 			self._initScrollbar();
 		}
 
@@ -192,6 +174,34 @@
 	}
 
 	StyledScroll.prototype = {
+		
+		_needToUseNative: function () {
+			var self = this;
+			
+			// Fall back to native scrolling if necessary features are not supported
+			if (!isSupportedBrowser) return true;
+			
+			// IOS does not supprt hiding scrollbars with touch overflow scrolling
+			if (supportsWebkitOverflowScrolling) {
+				// Touch webkitOverflowScrolling enables momentum which is required for a good user experience
+				self._scrollElement.style.webkitOverflowScrolling = 'touch';
+
+				// Work around for IOS 8 issue with webkitOverflowScrolling where dynamically adding content does not immediately allow scrolling
+				var scrollForcer = document.createElement('div');
+				scrollForcer.setAttribute('style', 'position:absolute;height:calc(100% + 1px);width:1px;top:0;left:0;visibility:hidden');
+				self._scrollElement.appendChild(scrollForcer);
+				
+				return true;
+			}
+
+			if (self._options.useNativeIfOverlay && getScrollbarWidth() <= 0) return true;
+			
+			if (isUsingWidthHack === undefined) {
+				isUsingWidthHack = !supportsMsOverflowStyle && getScrollbarWidth() > 0;
+			}
+			// With custom dimensions the width cannot be changed to hide the scrollbar so just default to native scrolling (Firefox)
+			if (!self._options.sameClientWidth && isUsingWidthHack) return true;
+		},
 
 		_initScrollbar: function () {
 			var self = this;
@@ -459,7 +469,6 @@
 
 		_updateScrollbar: function () {
 			var self = this;
-			
 			var scrollHeight = self._scrollElement.scrollHeight;
 			var clientHeight = self._scrollElement.clientHeight;
 

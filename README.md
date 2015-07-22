@@ -1,5 +1,5 @@
 # Styled Scroll
-Styled Scroll provides an overlayed vertical scrollbar for overflowing elements, perfect for creating a stylish scrollbar for all browsers or to simply reduce the amount of space the scrollbar occupies. Unlike other scrolling libraries it does not override default scrolling behavior- it only hides the default scrollbar and places its own. This means that it integrates seamlessly with [any scroll animator](http://julian.com/research/velocity/#scroll) and performs well no matter how complex the scrolled content is.
+Styled Scroll provides an overlaid vertical scrollbar for overflowing elements, perfect for creating a stylish scrollbar for all browsers or to simply reduce the amount of space the scrollbar occupies. Unlike other scrolling libraries it does not override default scrolling behavior- it only hides the default scrollbar and places its own. This means that it integrates seamlessly with [any scroll animator](http://julian.com/research/velocity/#scroll) and performs well no matter how complex the scrolled content is.
 
 ## Usage
 Standard Styled Scroll usage requires the scrollable content to have 100% the width and height of its parent:
@@ -45,7 +45,7 @@ Styled Scroll objects contain references to two divs that represent the scrollba
     }  
     
 ###### Styling
-You can apply any styles that you want to customize the appearance. For example Chrome's overlayed scrollbar can be approximated by:
+You can apply any styles that you want to customize the appearance. For example Chrome's overlaid scrollbar can be approximated by:
 
     .styled-scroll-track {
         top: 0;
@@ -89,6 +89,9 @@ Omitted properties will not be used. To handle all refreshes yourself use `refre
 
 ##### useNative
 Boolean. Creates a standard StyledScroll object but does not replace the native scrollbar with a styled one. This can be useful for using native scrollbars on specific platforms and still offers event callbacks for scrollStart and scrollEnd. This will be set to true if used on an unsupported platform.
+
+##### useNativeIfOverlay
+Boolean. Uses the native scrollbar if it does not use any layout space. Many mobile platforms implement their own attractive overlaid scrollbars that users are already accustomed to.
 
 ##### disconnectScrollbar
 Boolean. The track will be removed from the dom when it does not need to be displayed instead of changing that track's `visible` css. The same track will be reinserted if the scrollbar should reappear.
