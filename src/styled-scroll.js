@@ -40,8 +40,6 @@
 	var supportsMutationObserver = window.MutationObserver !== undefined;
 	var supportsEventConstructor = typeof window.Event == "function";
 
-	
-
 	/** Detect what input events are supported in order to register listeners.
 	 * Pointer events include mouse and touch events so listening to everything can cause events to be received twice.
 	**/
@@ -141,14 +139,13 @@
 	/* ========================= CLASS STYLED SCROLL ========================= */
 	function StyledScroll(scrollElement, options) {
 		var self = this;
-		var parent = scrollElement.parentNode;
 		self._scrollElement = scrollElement;
 		self._options = options || {};
 		for (var property in StyledScroll.defaultOptions) {
 			if (self._options[property] === undefined) self._options[property] = StyledScroll.defaultOptions[property];
 		}
 
-		if (scrollElement.clientHeight > parent.clientHeight || getComputedStyle(scrollElement).maxHeight === 'none') {
+		if (scrollElement.clientHeight > scrollElement.parentNode.clientHeight || getComputedStyle(scrollElement).maxHeight === 'none') {
 			scrollElement.style.maxHeight = '100%';
 		}
 			
@@ -163,8 +160,6 @@
 		} else {
 			// Permanent scrollbars prevents unnecessary repaints when the scrollbar would no longer be needed
 			scrollElement.style.overflowY = 'scroll';
-
-			if (isUsingWidthHack && !hasZoomTrigger) addZoomTrigger();
 
 			self._initScrollbar();
 		}
@@ -201,14 +196,30 @@
 			}
 			// With custom dimensions the width cannot be changed to hide the scrollbar so just default to native scrolling (Firefox)
 			if (!self._options.sameClientWidth && isUsingWidthHack) return true;
+			
+			return false;
 		},
 
 		_initScrollbar: function () {
 			var self = this;
-			var scrollElement = self._scrollElement;
-			var parent = scrollElement.parentNode;
 			
-			// Disable native scrollbar
+			self._disableNativeScrollbar();
+
+			var scrollbar = self._scrollbar = new Scrollbar(self);
+
+			self.refresh = function () {
+				scrollbar._requestUpdate();
+			};
+
+			if (isUsingWidthHack && !hasZoomTrigger) addZoomTrigger();
+			self._addRefreshTriggers();
+
+			self.refresh();
+		},
+		
+		_disableNativeScrollbar: function () {
+			var scrollElement = this._scrollElement;
+			
 			scrollElement.classList.add('hide-scrollbar');
 			if (isUsingWidthHack) {
 				// Make the scrolling element larger than the containing element so that the scrollbar is hidden
@@ -219,20 +230,16 @@
 				});
 				
 				// Prevent user from scrolling the scrollbar into view
-				parent.style.overflowX = 'hidden';
+				scrollElement.parentNode.style.overflowX = 'hidden';
 			} else if (supportsMsOverflowStyle) {
 				scrollElement.style.msOverflowStyle = 'none';
 			}
+		},
+		
+		_addRefreshTriggers: function () {
+			var self = this;
+			var scrollElement = self._scrollElement;
 			
-			// Ensure the parent is positioned so that the scrollbars can be correctly placed
-			if (parent !== scrollElement.offsetParent) parent.style.position = 'relative';
-
-			var scrollbar = self._scrollbar = new Scrollbar(self);
-
-			self.refresh = function () {
-				scrollbar._requestUpdate();
-			};
-
 			// Refresh the scrollbar's dimensions automatically based on configurable options
 			if (self._options.refreshTriggers.contentChange) {
 				if (supportsMutationObserver) {
@@ -260,8 +267,6 @@
 				else if (pollInterval < 15) pollInterval = 15;
 				self._pollIntervalId = setInterval(self.refresh, pollInterval);
 			}
-
-			self.refresh();
 		},
 		
         refresh: function () {
@@ -394,7 +399,11 @@
 		// });
 		
 		self._createTrack();
-		self._scrollElement.parentNode.appendChild(self._track);
+		
+		// Ensure the parent is positioned so that the track position and dimensions are calculated using its layout
+		var parent = self._scrollElement.parentNode;
+		if (parent !== self._scrollElement.offsetParent) parent.style.position = 'relative';
+		parent.appendChild(self._track);
 
 		self._thumbStyle = self._thumb.style;
 		self._shouldDisconnect = self._options.disconnectScrollbar;
