@@ -24,7 +24,7 @@
 			target.removeEventListener(type, listener);
 		};
 	} else isSupportedBrowser = false;
-	
+
 	var transformPrefixed;
 	// webkitTransform is the only prefix we care about since IE9 is not supported
 	if ('transform' in testDiv.style) {
@@ -118,7 +118,7 @@
 	function removeResizeTrigger(element) {
 		if (element.__resizeTrigger__) {
 			if (element.__resizeTrigger__.parentNode === element) element.removeChild(element.__resizeTrigger__);
-			element.__resizeTrigger__ = null;
+			delete element.__resizeTrigger__;
 		}
 	}
 
@@ -280,37 +280,39 @@
 				console.warn('Attempted to destroy an already destroyed Styled Scroll object, ignoring request.');
 				return;
 			}
-			self._isDestroyed = true;
 
 			if (_removeEventListener) {
 				_removeEventListener(self._scrollElement, 'scroll', self._onScroll);
-			} else self._scrollElement.onscroll = null;
+			} else self._scrollElement.onscroll = undefined;
 
-			if (self._options.useNative) return;
+			if (!self._options.useNative) {
+				var refreshTriggers = self._options.refreshTriggers;
+				if (refreshTriggers.contentChange) {
+					if (supportsMutationObserver) self._observer.disconnect();
+					else _removeEventListener(self._scrollElement, 'DOMSubtreeModified', self.refresh);
+				}
 
-			var refreshTriggers = self._options.refreshTriggers;
-			if (refreshTriggers.contentChange) {
-				if (supportsMutationObserver) self._observer.disconnect();
-				else _removeEventListener(self._scrollElement, 'DOMSubtreeModified', self.refresh);
+				if (refreshTriggers.elementResize) {
+					removeResizeTrigger(self._scrollElement);
+				}
+
+				if (refreshTriggers.windowResize) {
+					_removeEventListener(window, 'resize', self.refresh);
+				}
+
+				if (refreshTriggers.poll) {
+					clearInterval(self._pollIntervalId);
+				}
+
+				self._scrollbar._destroy();
 			}
 
-			if (refreshTriggers.elementResize) {
-				removeResizeTrigger(self._scrollElement);
-			}
+            var keys = Object.keys(self)
+            for (var i = keys.length; i--;) {
+                delete self[keys[i]];
+            }
 
-			if (refreshTriggers.windowResize) {
-				_removeEventListener(window, 'resize', self.refresh);
-			}
-
-			if (refreshTriggers.poll) {
-				clearInterval(self._pollIntervalId);
-			}
-
-			self.refresh = null;
-
-			self._scrollbar._destroy();
-			self._scrollbar = null;
-			self._scrollElement = null;
+			self._isDestroyed = true;
 		},
 
 		on: function (type, fn) {
@@ -380,11 +382,11 @@
 		},
 
 		getTrack: function () {
-			return this._scrollbar ? this._scrollbar._track : null;
+			return this._scrollbar ? this._scrollbar._track : undefined;
 		},
 
 		getThumb: function () {
-			return this._scrollbar ? this._scrollbar._thumb : null;
+			return this._scrollbar ? this._scrollbar._thumb : undefined;
 		}
 	};
 
@@ -663,9 +665,13 @@
 
 			var parent = self._track.parentNode;
 			if (parent) parent.removeChild(self._track);
-			self._track = null;
-			self._thumb = null;
+			
 			_removeEventListener(self._scrollElement, 'scroll', self._scrollListener);
+			
+			var keys = Object.keys(self)
+            for (var i = keys.length; i--;) {
+                delete self[keys[i]];
+            }
 		}
 	};
 
