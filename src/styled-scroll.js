@@ -12,7 +12,7 @@
 		function (callback) { window.setTimeout(callback, 1000 / 60); };
 
 	var testDiv = document.createElement('div');
-	testDiv.style.cssText = "visibility: hidden; width: 200px; height: 200px; overflow-y: scroll; -ms-overflow-style: scrollbar";
+	testDiv.style.cssText = "visibility:hidden;width:200px;height:200px;overflow-y:scroll;-ms-overflow-style:scrollbar";
 	testDiv.className = 'hide-scrollbar';
 
 	var isSupportedBrowser = testDiv.classList !== undefined;
@@ -24,7 +24,7 @@
 			target.removeEventListener(type, listener);
 		};
 	} else isSupportedBrowser = false;
-
+	
 	var transformPrefixed;
 	// webkitTransform is the only prefix we care about since IE9 is not supported
 	if ('transform' in testDiv.style) {
@@ -315,12 +315,12 @@
 
 		on: function (type, fn) {
 			var self = this;
-			if (!self._onScroll && (type === 'scrollStart' || type === 'scrollEnd')) {
+			if (!self._onScroll && (type === 'scrollstart' || type === 'scrollend')) {
 				self._onScroll = function () {
 					self._hasScrolledRecently = true;
 					if (!self._isScrolling) {
 						self._isScrolling = true;
-						self.triggerEvent('scrollStart');
+						self.triggerEvent('scrollstart');
 
 						// Create a timer that marks scrolling as ended if a scroll event has not occured within some timeout
 						var intervalId = setInterval(function checkIfScrolled() {
@@ -329,7 +329,7 @@
 							} else {
 								clearInterval(intervalId);
 								self._isScrolling = false;
-								self.triggerEvent('scrollEnd');
+								self.triggerEvent('scrollend');
 							}
 						}, 200);
 					}
@@ -444,7 +444,7 @@
 
 			track.appendChild(thumb);
 		},
-		
+
 		_handleThumbWheelEvents: function () {
 			var wheelTarget = this._scrollElement;
 			_addEventListener(this._thumb, 'wheel', function (event) {
@@ -454,7 +454,7 @@
 					deltaY > 0 && wheelTarget.scrollTop + wheelTarget.clientHeight >= wheelTarget.scrollHeight) {
 					return;
 				}
-				
+
 				event.preventDefault();
 
 				// Browsers that support isTrusted do not allow constructed mouse wheel events to apply the default scroll behavior
@@ -470,7 +470,7 @@
 					} else if (deltaMode === 1) { // FF
 						wheelTarget.scrollTop += deltaY * 20;
 					} else { // FF with one screen at a time scrolling
-						wheelTarget.scrollTop += deltaY * wheelTarget.clientHeight * .9;
+						wheelTarget.scrollTop += deltaY * wheelTarget.clientHeight * 0.9;
 					}
 				}
 			});
