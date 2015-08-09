@@ -440,15 +440,40 @@
 			track.style.pointerEvents = 'none';
 			thumb.style.pointerEvents = 'auto';
 
-			if (supportsEventConstructor) {
-				var wheelTarget = this._scrollElement;
-				_addEventListener(thumb, 'wheel', function (event) {
-					var clone = new event.constructor(event.type, event);
-					wheelTarget.dispatchEvent(clone);
-				});
-			}
+			this._handleThumbWheelEvents();
 
 			track.appendChild(thumb);
+		},
+		
+		_handleThumbWheelEvents: function () {
+			var wheelTarget = this._scrollElement;
+			_addEventListener(this._thumb, 'wheel', function (event) {
+				var deltaY = event.deltaY;
+				// Allow unhandled wheel events to propagate to parent elements
+				if (deltaY < 0 && wheelTarget.scrollTop === 0 ||
+					deltaY > 0 && wheelTarget.scrollTop + wheelTarget.clientHeight >= wheelTarget.scrollHeight) {
+					return;
+				}
+				
+				event.preventDefault();
+
+				// Browsers that support isTrusted do not allow constructed mouse wheel events to apply the default scroll behavior
+				if (supportsEventConstructor && event.isTrusted === undefined) { // Chrome
+					var clone = new event.constructor(event.type, event);
+					wheelTarget.dispatchEvent(clone);
+				} else {
+					var deltaMode = event.deltaMode;
+					if (deltaMode === 0) { // IE
+						// IE generates deltas as a percentage of the viewport- it is how many pixels the document would scroll if it were receiving the wheel event
+						// As of 8/8/15 Edge appears to be reporting innerHeight slightly incorrectly
+						wheelTarget.scrollTop += deltaY * wheelTarget.clientHeight / window.innerHeight;
+					} else if (deltaMode === 1) { // FF
+						wheelTarget.scrollTop += deltaY * 20;
+					} else { // FF with one screen at a time scrolling
+						wheelTarget.scrollTop += deltaY * wheelTarget.clientHeight * .9;
+					}
+				}
+			});
 		},
 
 		_requestUpdate: function () {
