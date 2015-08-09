@@ -38,7 +38,7 @@
 	var supportsWebkitOverflowScrolling = '-webkit-overflow-scrolling' in testDiv.style;
 	var supportsMsOverflowStyle = '-ms-overflow-style' in testDiv.style;
 	var supportsMutationObserver = window.MutationObserver !== undefined;
-	var supportsEventConstructor = typeof window.Event == "function";
+	var supportsEventConstructor = typeof window.Event === "function";
 
 	/** Detect what input events are supported in order to register listeners.
 	 * Pointer events include mouse and touch events so listening to everything can cause events to be received twice.
@@ -75,12 +75,12 @@
 			_removeEventListener(target, types[i], listener);
 		}
 	}
-	
+
 	var hasZoomTrigger;
 	function addZoomTrigger() {
 		if (supportsEventConstructor && !hasZoomTrigger) {
 			hasZoomTrigger = true;
-			
+
 			var zoomTrigger = document.createElement('iframe');
 			zoomTrigger.id = 'zoom-trigger';
 			zoomTrigger.style.cssText = 'position:absolute;top:0;left:0;height:200px;width:200px;border:none;pointer-events:none;visibility:hidden;z-index:-2147483648;';
@@ -148,7 +148,7 @@
 		if (scrollElement.clientHeight > scrollElement.parentNode.clientHeight || getComputedStyle(scrollElement).maxHeight === 'none') {
 			scrollElement.style.maxHeight = '100%';
 		}
-			
+
 		if (self._options.sameDimensions) {
 			self._options.sameClientWidth = self._options.sameClientHeight = true;
 		}
@@ -169,7 +169,7 @@
 	}
 
 	StyledScroll.prototype = {
-		
+
 		_needToUseNative: function () {
 			var self = this;
 			
@@ -185,24 +185,24 @@
 				var scrollForcer = document.createElement('div');
 				scrollForcer.setAttribute('style', 'position:absolute;height:calc(100% + 1px);width:1px;top:0;left:0;visibility:hidden');
 				self._scrollElement.appendChild(scrollForcer);
-				
+
 				return true;
 			}
 
 			if (self._options.useNativeIfOverlay && getScrollbarWidth() <= 0) return true;
-			
+
 			if (isUsingWidthHack === undefined) {
 				isUsingWidthHack = !supportsMsOverflowStyle && getScrollbarWidth() > 0;
 			}
 			// With custom dimensions the width cannot be changed to hide the scrollbar so just default to native scrolling (Firefox)
 			if (!self._options.sameClientWidth && isUsingWidthHack) return true;
-			
+
 			return false;
 		},
 
 		_initScrollbar: function () {
 			var self = this;
-			
+
 			self._disableNativeScrollbar();
 
 			var scrollbar = self._scrollbar = new Scrollbar(self);
@@ -216,10 +216,10 @@
 
 			self.refresh();
 		},
-		
+
 		_disableNativeScrollbar: function () {
 			var scrollElement = this._scrollElement;
-			
+
 			scrollElement.classList.add('hide-scrollbar');
 			if (isUsingWidthHack) {
 				// Make the scrolling element larger than the containing element so that the scrollbar is hidden
@@ -235,7 +235,7 @@
 				scrollElement.style.msOverflowStyle = 'none';
 			}
 		},
-		
+
 		_addRefreshTriggers: function () {
 			var self = this;
 			var scrollElement = self._scrollElement;
@@ -268,7 +268,7 @@
 				self._pollIntervalId = setInterval(self.refresh, pollInterval);
 			}
 		},
-		
+
         refresh: function () {
 			// Stub so that native scrollbar refreshes are a noop  
         },
@@ -281,7 +281,7 @@
 				return;
 			}
 			self._isDestroyed = true;
-			
+
 			if (_removeEventListener) {
 				_removeEventListener(self._scrollElement, 'scroll', self._onScroll);
 			} else self._scrollElement.onscroll = null;
@@ -378,20 +378,20 @@
 		getScrollElement: function () {
 			return this._scrollElement;
 		},
-		
+
 		getTrack: function () {
-			return this._scrollbar ? this._scrollbar._track : null;	
+			return this._scrollbar ? this._scrollbar._track : null;
 		},
-		
+
 		getThumb: function () {
-			return this._scrollbar ? this._scrollbar._thumb : null;	
+			return this._scrollbar ? this._scrollbar._thumb : null;
 		}
 	};
 
 	/* ========================= CLASS SCROLLBAR ========================= */
 	function Scrollbar(styledScroll) {
 		var self = this;
-		
+
 		self._scrollElement = styledScroll._scrollElement;
 		self._options = styledScroll._options;
 		// Object.keys(styledScroll).forEach(function (property) {
@@ -420,7 +420,7 @@
 	}
 
 	Scrollbar.prototype = {
-		
+
 		_createTrack: function () {
 			var track = this._track = document.createElement('div');
 			var thumb = this._thumb = document.createElement('div');
@@ -442,8 +442,8 @@
 
 			if (supportsEventConstructor) {
 				var wheelTarget = this._scrollElement;
-				_addEventListener(track, 'wheel', function (event) {
-					var clone = new WheelEvent(event.type, event);
+				_addEventListener(thumb, 'wheel', function (event) {
+					var clone = new event.constructor(event.type, event);
 					wheelTarget.dispatchEvent(clone);
 				});
 			}
@@ -525,7 +525,7 @@
 			var availableTrackHeight;
 			var trackCompStyle = getComputedStyle(this._track);
 			var thumbCompStyle = getComputedStyle(this._thumb);
-			
+
 			if (this._options.sameClientHeight) {
 				availableTrackHeight = this._track.clientHeight;
 			} else {
@@ -537,18 +537,18 @@
 				this._track.style.height = clientHeight - trackTop - trackBottom + 'px';
 				availableTrackHeight = clientHeight - trackTop - borderTop - trackBottom - borderBottom;
 			}
-			
+
 			availableTrackHeight -= getStyleFloat(thumbCompStyle.top) + getStyleFloat(thumbCompStyle.bottom);
 			availableTrackHeight -= getStyleFloat(trackCompStyle.paddingTop) + getStyleFloat(trackCompStyle.paddingBottom);
 
 			return availableTrackHeight;
 		},
-		
+
 		_translateTrack: function () {
 			var parent = this._scrollElement.parentNode;
 			if (!parent) return;
 			var parentCompStyle = getComputedStyle(parent);
-			
+
 			var scrollCompStyle = getComputedStyle(this._scrollElement);
 			var translation = '';
 
@@ -558,13 +558,13 @@
 
 				translation += 'translateX(' + -1 * rightOffset + 'px)';
 			}
-			
+
 			if (!this._options.sameClientHeight) {
 				var topOffset = getStyleFloat(scrollCompStyle.top) + getStyleFloat(scrollCompStyle.borderTopWidth) + getStyleFloat(scrollCompStyle.marginTop) + getStyleFloat(parentCompStyle.paddingTop);
-				
+
 				translation += 'translateY(' + topOffset + 'px)';
 			}
-			
+
 			if (translation) this._track.style[transformPrefixed] = translation;
 		},
 
@@ -585,7 +585,13 @@
 		_initThumbEvents: function () {
 			var self = this;
 
-			self._start = function (e) {
+			// Thumb event functions aren't declared on the prototype because they need a lexical this (self) binding when passed as an argument to addEventListener
+			function start(e) {
+				// Skip mouse events that aren't left clicks
+				if (!!e.button) {
+					return;
+				}
+
 				self._lastMouseY = (e.touches ? e.touches[0] : e).pageY;
 
 				self._dragTopOffset = self._lastMouseY - self._getCurrentThumbTop();
@@ -601,10 +607,10 @@
 
 				addEvents(moveTarget, moveEvents, self._move);
 				addEvents(moveTarget, endEvents, self._end);
-			};
+			}
 
-			//Consider performance: this function can be called 15+ times per frame
 			self._move = function (e) {
+				// Consider performance: this function can be called 15+ times per frame
 				self._lastMouseY = (e.touches ? e.touches[0] : e).pageY;
 
 				self._isDragged = true;
@@ -620,7 +626,7 @@
 				removeEvents(moveTarget, endEvents, self._end);
 			};
 
-			addEvents(self._thumb, startEvents, self._start);
+			addEvents(self._thumb, startEvents, start);
 		},
 
 		_destroy: function () {
@@ -638,9 +644,5 @@
 		}
 	};
 
-	if (typeof module != 'undefined' && module.exports) {
-		module.exports = StyledScroll;
-	} else {
-		window.StyledScroll = StyledScroll;
-	}
+	window.StyledScroll = StyledScroll;
 })(window, document);
