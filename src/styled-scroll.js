@@ -83,7 +83,7 @@
 			
 			var zoomTrigger = document.createElement('iframe');
 			zoomTrigger.id = 'zoom-trigger';
-			zoomTrigger.style.cssText = 'width: 1;';
+			zoomTrigger.style.cssText = 'position:absolute;top:0;left:0;height:200px;width:200px;border:none;pointer-events:none;visibility:hidden;z-index:-2147483648;';
 			document.body.appendChild(zoomTrigger);
 			zoomTrigger.contentWindow.onresize = function () {
 				window.dispatchEvent(new Event('zoom'));
