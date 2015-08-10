@@ -115,10 +115,10 @@ button:hover {
     height: 300px; 
     left: 375px; 
     background: lightskyblue; 
-    padding: 0 5px 0 8px;
+    padding: 5px 5px 0 8px;
     border-color: teal;
     border-style: groove;
-    border-width: 2px 2px 6px 6px;
+    border-width: 12px 9px 6px 6px;
 }
 
 #border-content {
@@ -127,7 +127,8 @@ button:hover {
     border-width: 5px 13px 6px 8px;
     height: 80%;
     padding: 30px;
-    margin: 10px 20px 0 10px;
+    top: 20px;
+    margin: 15px 20px 0 10px;
 }
 
 

@@ -554,8 +554,8 @@
 				}
 			}
 
-			var availableTrackHeight = self._calculateAvailableTrackHeight(clientHeight);
-			if (!self._options.sameDimensions) self._translateTrack();
+			if (!self._options.sameDimensions) self._positionTrack();
+			var availableTrackHeight = self._calculateAvailableTrackHeight();
 
 			var thumbHeight = availableTrackHeight * clientHeight / scrollHeight;
 			//A quick benchmark showed Math.max performance to be worse than an if statement on IE11
@@ -570,52 +570,41 @@
 			self._updateThumbPosition();
 		},
 
-		// The height the thumb is allowed to occupy
-		_calculateAvailableTrackHeight: function (clientHeight) {
-			var availableTrackHeight;
-			var trackCompStyle = getComputedStyle(this._track);
-			var thumbCompStyle = getComputedStyle(this._thumb);
+		_positionTrack: function () {
+			var self = this;
+			var parent = self._scrollElement.parentNode;
+			if (!parent) return;
 
-			if (this._options.sameClientHeight) {
-				availableTrackHeight = this._track.clientHeight;
-			} else {
-				var trackTop = getStyleFloat(trackCompStyle.top);
-				var trackBottom = getStyleFloat(trackCompStyle.bottom);
-				var borderTop = getStyleFloat(trackCompStyle.borderTopWidth);
-				var borderBottom = getStyleFloat(trackCompStyle.borderBottomWidth);
+			if (!self._options.sameClientWidth) {
+				var parentCompStyle = getComputedStyle(parent);
+				var scrollCompStyle = getComputedStyle(self._scrollElement);
+				
+				// Translate the scrollbar from the right of the parent div to the right of the scrolled div
+				var rightOffset = getStyleFloat(scrollCompStyle.right) + getStyleFloat(scrollCompStyle.marginRight) + getStyleFloat(parentCompStyle.paddingRight) + getStyleFloat(scrollCompStyle.borderRightWidth);
 
-				this._track.style.height = clientHeight - trackTop - trackBottom + 'px';
-				availableTrackHeight = clientHeight - trackTop - borderTop - trackBottom - borderBottom;
+				self._track.style.marginRight = rightOffset + 'px';
 			}
 
-			availableTrackHeight -= getStyleFloat(thumbCompStyle.top) + getStyleFloat(thumbCompStyle.bottom);
-			availableTrackHeight -= getStyleFloat(trackCompStyle.paddingTop) + getStyleFloat(trackCompStyle.paddingBottom);
+			if (!self._options.sameClientHeight) {
+				var topOffset = self._scrollElement.offsetTop + self._scrollElement.clientTop
+				self._track.style.marginTop = topOffset + 'px';
 
-			return availableTrackHeight;
+				var bottomOffset = parent.clientHeight - topOffset - self._scrollElement.clientHeight;
+				self._track.style.marginBottom = bottomOffset + 'px';
+			}
 		},
 
-		_translateTrack: function () {
-			var parent = this._scrollElement.parentNode;
-			if (!parent) return;
-			var parentCompStyle = getComputedStyle(parent);
+		// The height the thumb is allowed to occupy
+		_calculateAvailableTrackHeight: function () {
+			var availableTrackHeight = this._track.clientHeight;
 
-			var scrollCompStyle = getComputedStyle(this._scrollElement);
-			var translation = '';
+			var trackCompStyle = getComputedStyle(this._track);
+			availableTrackHeight -= getStyleFloat(trackCompStyle.paddingTop) + getStyleFloat(trackCompStyle.paddingBottom);
 
-			if (!this._options.sameClientWidth) {
-				// Translate the scrollbar from the right of the parent div to the right of the scrolled div
-				var rightOffset = getStyleFloat(scrollCompStyle.right) + getStyleFloat(scrollCompStyle.borderRightWidth) + getStyleFloat(scrollCompStyle.marginRight) + getStyleFloat(parentCompStyle.paddingRight);
+			var thumbCompStyle = getComputedStyle(this._thumb);
+			availableTrackHeight -= getStyleFloat(thumbCompStyle.top) + getStyleFloat(thumbCompStyle.bottom);
 
-				translation += 'translateX(' + -1 * rightOffset + 'px)';
-			}
-
-			if (!this._options.sameClientHeight) {
-				var topOffset = getStyleFloat(scrollCompStyle.top) + getStyleFloat(scrollCompStyle.borderTopWidth) + getStyleFloat(scrollCompStyle.marginTop) + getStyleFloat(parentCompStyle.paddingTop);
-
-				translation += 'translateY(' + topOffset + 'px)';
-			}
-
-			if (translation) this._track.style[transformPrefixed] = translation;
+			return availableTrackHeight;
 		},
 
 		// Calculate the percentage that the element is currently scrolled and multiply it by the length the thumb can scroll
