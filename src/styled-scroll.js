@@ -134,7 +134,7 @@
 
 		return scrollbarWidth;
 	}
-	
+
 	// Whether or not scrollbars are being hidden by modifying element size (for browsers that don't support hiding scrollbars)
 	var isUsingWidthHack;
 
@@ -160,9 +160,6 @@
 		if (self._options.useNative) {
 			scrollElement.style.overflowY = 'auto';
 		} else {
-			// Permanent scrollbars prevents unnecessary repaints when the scrollbar would no longer be needed
-			scrollElement.style.overflowY = 'scroll';
-
 			self._initScrollbar();
 		}
 
@@ -174,10 +171,10 @@
 
 		_needToUseNative: function () {
 			var self = this;
-			
+
 			// Fall back to native scrolling if necessary features are not supported
 			if (!isSupportedBrowser) return true;
-			
+
 			// IOS does not supprt hiding scrollbars with touch overflow scrolling
 			if (supportsWebkitOverflowScrolling) {
 				// Touch webkitOverflowScrolling enables momentum which is required for a good user experience
@@ -213,7 +210,6 @@
 				scrollbar._requestUpdate();
 			};
 
-			if (isUsingWidthHack && !hasZoomTrigger) addZoomTrigger();
 			self._addRefreshTriggers();
 
 			self.refresh();
@@ -221,16 +217,21 @@
 
 		_disableNativeScrollbar: function () {
 			var scrollElement = this._scrollElement;
+			
+			// Permanent scrollbars prevents unnecessary repaints when the scrollbar would no longer be needed
+			scrollElement.style.overflowY = 'scroll';
 
 			scrollElement.classList.add('hide-scrollbar');
 			if (isUsingWidthHack) {
 				// Make the scrolling element larger than the containing element so that the scrollbar is hidden
 				scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px)';
+				
 				// Scrollbar width depends on zoom level
-				_addEventListener(window, 'zoom', function () {
+				if (!hasZoomTrigger) addZoomTrigger();
+				_addEventListener(window, 'zoom', this._onZoom = function () {
 					scrollElement.style.width = 'calc(100% + ' + getScrollbarWidth() + 'px)';
 				});
-				
+
 				// Prevent user from scrolling the scrollbar into view
 				scrollElement.parentNode.style.overflowX = 'hidden';
 			} else if (supportsMsOverflowStyle) {
@@ -238,12 +239,27 @@
 			}
 		},
 
+		_enableNativeScrollbar: function () {
+			var scrollElement = this._scrollElement;
+
+			scrollElement.style.overflowY = 'auto';
+			scrollElement.classList.remove('hide-scrollbar');
+
+			if (isUsingWidthHack) {
+				scrollElement.style.width = '100%';
+				_removeEventListener(window, 'zoom', this._onZoom);
+			} else if (supportsMsOverflowStyle) {
+				scrollElement.style.msOverflowStyle = 'auto';
+			}
+		},
+
 		_addRefreshTriggers: function () {
 			var self = this;
 			var scrollElement = self._scrollElement;
-			
+			var refreshTriggers = self._options.refreshTriggers;
+
 			// Refresh the scrollbar's dimensions automatically based on configurable options
-			if (self._options.refreshTriggers.contentChange) {
+			if (refreshTriggers.contentChange) {
 				if (supportsMutationObserver) {
 					self._observer = new MutationObserver(self.refresh);
 					self._observer.observe(scrollElement, { attributes: true, childList: true, subtree: true });
@@ -253,17 +269,17 @@
 				}
 			}
 
-			if (self._options.refreshTriggers.elementResize) {
+			if (refreshTriggers.elementResize) {
 				// Position the scroll element so that the resize trigger can use its dimensions
 				if (getComputedStyle(scrollElement).position === 'static') scrollElement.style.position = 'relative';
 				addResizeTrigger(scrollElement, self.refresh);
 			}
 
-			if (self._options.refreshTriggers.windowResize) {
+			if (refreshTriggers.windowResize) {
 				_addEventListener(window, 'resize', self.refresh);
 			}
 
-			var pollInterval = self._options.refreshTriggers.poll;
+			var pollInterval = refreshTriggers.poll;
 			if (pollInterval) {
 				if (typeof pollInterval !== 'number') pollInterval = 250;
 				else if (pollInterval < 15) pollInterval = 15;
@@ -271,9 +287,30 @@
 			}
 		},
 
-        refresh: function () {
-			// Stub so that native scrollbar refreshes are a noop  
-        },
+		_removeRefreshTriggers: function () {
+			var self = this;
+			var refreshTriggers = self._options.refreshTriggers;
+			if (refreshTriggers.contentChange) {
+				if (supportsMutationObserver) self._observer.disconnect();
+				else _removeEventListener(self._scrollElement, 'DOMSubtreeModified', self.refresh);
+			}
+
+			if (refreshTriggers.elementResize) {
+				removeResizeTrigger(self._scrollElement);
+			}
+
+			if (refreshTriggers.windowResize) {
+				_removeEventListener(window, 'resize', self.refresh);
+			}
+
+			if (refreshTriggers.poll) {
+				clearInterval(self._pollIntervalId);
+			}
+		},
+
+		refresh: function () {
+			// Stub so that native scrollbar refreshes are a noop
+		},
 
 		destroy: function () {
 			var self = this;
@@ -288,31 +325,15 @@
 			} else self._scrollElement.onscroll = undefined;
 
 			if (!self._options.useNative) {
-				var refreshTriggers = self._options.refreshTriggers;
-				if (refreshTriggers.contentChange) {
-					if (supportsMutationObserver) self._observer.disconnect();
-					else _removeEventListener(self._scrollElement, 'DOMSubtreeModified', self.refresh);
-				}
-
-				if (refreshTriggers.elementResize) {
-					removeResizeTrigger(self._scrollElement);
-				}
-
-				if (refreshTriggers.windowResize) {
-					_removeEventListener(window, 'resize', self.refresh);
-				}
-
-				if (refreshTriggers.poll) {
-					clearInterval(self._pollIntervalId);
-				}
-
+				self._removeRefreshTriggers();
 				self._scrollbar._destroy();
+				self._enableNativeScrollbar();
 			}
 
-            var keys = Object.keys(self)
-            for (var i = keys.length; i--;) {
-                delete self[keys[i]];
-            }
+			var keys = Object.keys(self);
+			for (var i = keys.length; i--;) {
+				delete self[keys[i]];
+			}
 
 			self._isDestroyed = true;
 		},
@@ -401,9 +422,9 @@
 		// Object.keys(styledScroll).forEach(function (property) {
 		// 	self[property] = styledScroll[property];
 		// });
-		
+
 		self._createTrack();
-		
+
 		// Ensure the parent is positioned so that the track position and dimensions are calculated using its layout
 		var parent = self._scrollElement.parentNode;
 		if (parent !== self._scrollElement.offsetParent) parent.style.position = 'relative';
@@ -439,17 +460,17 @@
 			// Bug fix for IE overscrolling the window instead of allowing scrolling with the thumb
 			thumb.style.msTouchAction = 'none';
 			thumb.style.touchAction = 'none';
-			
+
 			// Prevent invisible track from stealing mouse events.
 			track.style.pointerEvents = 'none';
 			thumb.style.pointerEvents = 'auto';
 
-			this._handleThumbWheelEvents();
+			this._handleWheelEventsOnThumb();
 
 			track.appendChild(thumb);
 		},
 
-		_handleThumbWheelEvents: function () {
+		_handleWheelEventsOnThumb: function () {
 			var wheelTarget = this._scrollElement;
 			_addEventListener(this._thumb, 'wheel', function (event) {
 				var deltaY = event.deltaY;
@@ -667,13 +688,13 @@
 
 			var parent = self._track.parentNode;
 			if (parent) parent.removeChild(self._track);
-			
+
 			_removeEventListener(self._scrollElement, 'scroll', self._scrollListener);
-			
-			var keys = Object.keys(self)
-            for (var i = keys.length; i--;) {
-                delete self[keys[i]];
-            }
+
+			var keys = Object.keys(self);
+			for (var i = keys.length; i--;) {
+				delete self[keys[i]];
+			}
 		}
 	};
 
