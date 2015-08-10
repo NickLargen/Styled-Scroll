@@ -100,7 +100,7 @@
 		// Create an element that supports resize events with the same height  and width as the provided element
 		// Changes to width need to be listened to because child elements may change height as their width changes
 		var resizeTrigger = document.createElement('iframe');
-		resizeTrigger.setAttribute('style', 'position:absolute;top:0;left:0;height:100%;width:100%;border:none;pointer-events:none;visibility:hidden;z-index:-2147483648;');
+		resizeTrigger.style.cssText = 'position:absolute;top:0;left:0;height:100%;width:100%;border:none;pointer-events:none;visibility:hidden;z-index:-2147483648;';
 
 		resizeTrigger.onload = function () {
 			if (resizeTrigger.contentWindow) {
@@ -112,12 +112,14 @@
 			}
 		};
 		element.appendChild(resizeTrigger);
-		element.__resizeTrigger__ = element;
+		element.__resizeTrigger__ = resizeTrigger;
 	}
 
 	function removeResizeTrigger(element) {
-		if (element.__resizeTrigger__) {
-			if (element.__resizeTrigger__.parentNode === element) element.removeChild(element.__resizeTrigger__);
+		var resizeTrigger = element.__resizeTrigger__;
+		if (resizeTrigger) {
+			var parent = resizeTrigger.parentNode;
+			if (parent) parent.removeChild(resizeTrigger);
 			delete element.__resizeTrigger__;
 		}
 	}
