@@ -14,7 +14,8 @@ To allow the content div to be scrollable all you have to do is create a new Sty
 
 Firefox support requires the scrollable element to have the same width as its parent
 
-    var styledScroll = new StyledScroll(document.getElementById('content'), { sameClientWidth: true });
+    var options = { sameClientWidth: true };
+    var styledScroll = new StyledScroll(document.getElementById('content'), options);
 
 If you are finished with the object and aren't navigating to a different page, make sure to clear it from memory:
 
@@ -82,23 +83,24 @@ Browsers that lack necessary features for customizing the appearance will revert
 Opera Mini cannot work while it lacks support for element overflow. 
 
 <h2 id='methods'>Prototype Methods</h2>
-`refresh()` forces an update on the position and size of the track and thumb.
-`destroy()` removes the custom scrollbar from the dom, enables native scrolling, and deletes any allocated memory or events.
-`getScrollElement()` returns the element provided to the constructor.
-`getTrack()` returns the element used to display the track- it is a sibling of getScrollElement().
-`getThumb()` returns the element used to display the thumb- it is a child of getTrack().
+* `refresh()` forces an update on the position and size of the track and thumb.
+* `destroy()` removes the custom scrollbar from the dom, enables native scrolling, and deletes any allocated memory or events.
+* `getScrollElement()` returns the element provided to the constructor.
+* `getTrack()` returns the element used to display the track- it is a sibling of getScrollElement().
+* `getThumb()` returns the element used to display the thumb- it is a child of getTrack().
 
 <h2 id='options'>Options</h2>
 Styled Scroll accepts an options parameter for customized behavior. _For brevity falsey default values will not be listed._
 
 ##### sameClientWidth, sameClientHeight, sameDimensions
-Boolean. If the target element will always have the same clientWidth or clientHeight as its Styled Scroll can apply compatibility and performance enhancements.
+Boolean. If the target element will always have the same clientWidth or clientHeight as its parent Styled Scroll can apply compatibility and performance enhancements.
+
 sameDimensions: true is just a shortcut to set sameClientWidth and sameClientHeight to true.
 
 ##### refreshTriggers
 An object that defines when the scrollbar will automatically be refreshed in response to an event.
 
-* **contentChange:** Boolean. Content additions, modifications, and deletions can affect the scrollheight. On most platforms this uses a Mutation Observer.
+* **contentChange:** Boolean. Content additions, modifications, and deletions can affect the scroll height. On most platforms this uses a Mutation Observer.
 * **windowResize:** Boolean. The scrollbar will be updated whenever the window is. This is very useful for any element whose dimensions are determined by window size.
 * **elementResize:** Boolean. The scrollable element has changed in width or height. Since dom elements don't natively fire resize events this is implemented by inserting a child iframe with 100% width and height. This can be computationally intensive when rendering a large number of scrollable elements and _may_ cause layout issues but works for elements that resize for reasons other than the browser being resized.
 * **poll:** Number. An interval in milliseconds to constantly send refreshes. This a brute force approach that will guarantee scrollbar accuracy but consumes resources on static elements. Avoid creating a large number of polling objects on the same page. Non-positive numbers will cause refreshes to be requested at 60fps and a boolean true will use a default poll interval.
