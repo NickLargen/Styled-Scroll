@@ -2,25 +2,25 @@
 Styled Scroll provides an overlaid vertical scrollbar for overflowing elements, perfect for creating a stylish scrollbar for all browsers or to simply reduce the amount of space the scrollbar occupies. Unlike other scrolling libraries it does not override default scrolling behavior- it only hides the default scrollbar and places its own. This means that it integrates seamlessly with [any scroll animator](http://julian.com/research/velocity/#scroll) and performs well no matter how complex the scrolled content is.
 
 ## Usage
-Standard Styled Scroll usage requires the scrollable content to have 100% the width and height of its parent:
- 
-    <div id='viewport'>
+    <div id='parent'>
         <div id='content'>
             ... content ...
         </div>
     </div>
     
-Then all you have to do is create a new StyledScroll object:
+To allow the content div to be scrollable all you have to do is create a new StyledScroll object:
 
     var styledScroll = new StyledScroll(document.getElementById('content'));
 
-If you are finished with the object, make sure to clear it from memory:
+Firefox support requires the scrollable element to have the same width as its parent
+
+    var styledScroll = new StyledScroll(document.getElementById('content'), { sameClientWidth: true });
+
+If you are finished with the object and aren't navigating to a different page, make sure to clear it from memory:
 
     styledScroll.destroy();
-    styledScroll = null;
 
-    
-The scrollbar will automatically update its dimensions and position with any changes to the scrollable region (see [options](#options) to configure this behavior). However, changing a scrollbar's styling at runtime may require you to inform it that its position has changed:
+The scrollbar will automatically update its dimensions and position with any changes to the scrollable region (see [options](#options) to configure this behavior). However, changing a scrollbar's styling at runtime may require you to inform it that its position or dimensions have changed:
 
     styledScroll.refresh();
 
@@ -70,20 +70,40 @@ You can apply any styles that you want to customize the appearance. For example 
 Important note: avoid padding on the thumb or margins on either the thumb or track. Use top/right/bottom/left to change their location.
 
 ## Browser Compatability
-Styled Scroll is tested to work on the latest versions of Chrome, Firefox, and IE 10+ on both desktop and mobile devices. If a browser lacks necessary features for customization the appearance will simply revert to the native scrollbar.
+|         	| Chrome	| Firefox 	| IE 10+ 	| IE < 10 	| Safari 	| Opera 	 | Opera Mini 	|
+|---------	|:--------:	|:--------:	|:--------:	|:--------:	|:--------:	|:-------:	 |:------------:	|
+| Desktop 	|    ✔   	|    ✔*   	|    ✔   	|  Native  	|    ?   	|   ✔      |     N/A    	|
+| Mobile  	|    ✔   	|    ?    	|    ✔   	|    N/A   	| Native 	|   ?   	|      ✖     	|
+
+**\* Important:** Firefox requires the option `sameClientWidth` to be set to true so that the default scrollbar can be hidden underneath the parent element.
+
+Browsers that lack necessary features for customizing the appearance will revert to the native scrollbar. This primarily affects iOS where -webkit-overflow-scrolling is set to touch to enable inertial scrolling, however the resulting overlayed scrollbars cannot be hidden.
+
+Opera Mini cannot work while it lacks support for element overflow. 
+
+<h2 id='methods'>Prototype Methods</h2>
+`refresh()` forces an update on the position and size of the track and thumb.
+`destroy()` removes the custom scrollbar from the dom, enables native scrolling, and deletes any allocated memory or events.
+`getScrollElement()` returns the element provided to the constructor.
+`getTrack()` returns the element used to display the track- it is a sibling of getScrollElement().
+`getThumb()` returns the element used to display the thumb- it is a child of getTrack().
 
 <h2 id='options'>Options</h2>
 Styled Scroll accepts an options parameter for customized behavior. _For brevity falsey default values will not be listed._
+
+##### sameClientWidth, sameClientHeight, sameDimensions
+Boolean. If the target element will always have the same clientWidth or clientHeight as its Styled Scroll can apply compatibility and performance enhancements.
+sameDimensions: true is just a shortcut to set sameClientWidth and sameClientHeight to true.
 
 ##### refreshTriggers
 An object that defines when the scrollbar will automatically be refreshed in response to an event.
 
 * **contentChange:** Boolean. Content additions, modifications, and deletions can affect the scrollheight. On most platforms this uses a Mutation Observer.
-* **elementResize:** Boolean. The scrollable element has changed in width or height. Since dom elements don't natively fire resize events this is implemented by inserting a child iframe with 100% width and height. This is computationally intensive (particularly with a large number of scrollable elements) and should be disabled if unnecessary.
 * **windowResize:** Boolean. The scrollbar will be updated whenever the window is. This is very useful for any element whose dimensions are determined by window size.
+* **elementResize:** Boolean. The scrollable element has changed in width or height. Since dom elements don't natively fire resize events this is implemented by inserting a child iframe with 100% width and height. This can be computationally intensive when rendering a large number of scrollable elements and _may_ cause layout issues but works for elements that resize for reasons other than the browser being resized.
 * **poll:** Number. An interval in milliseconds to constantly send refreshes. This a brute force approach that will guarantee scrollbar accuracy but consumes resources on static elements. Avoid creating a large number of polling objects on the same page. Non-positive numbers will cause refreshes to be requested at 60fps and a boolean true will use a default poll interval.
 
-Default: `{ contentChange: true, elementResize: true }`
+Default: `{ contentChange: true, windowResize: true }`
     
 Omitted properties will not be used. To handle all refreshes yourself use `refreshTriggers: {}`.
 
