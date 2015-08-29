@@ -4,3 +4,4 @@ node_modules
 *.bat
 *.txt
 dist
+coverage
