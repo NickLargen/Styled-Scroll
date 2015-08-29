@@ -4,4 +4,7 @@ node_modules
 *.bat
 *.txt
 dist
-coverage
+test/ui-results
+test/unit-coverage
+tsd.json
+typings
