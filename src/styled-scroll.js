@@ -576,11 +576,8 @@
 			if (!parent) return;
 
 			if (!self._options.sameClientWidth) {
-				var parentCompStyle = getComputedStyle(parent);
-				var scrollCompStyle = getComputedStyle(self._scrollElement);
-				
 				// Translate the scrollbar from the right of the parent div to the right of the scrolled div
-				var rightOffset = getStyleFloat(scrollCompStyle.right) + getStyleFloat(scrollCompStyle.marginRight) + getStyleFloat(parentCompStyle.paddingRight) + getStyleFloat(scrollCompStyle.borderRightWidth);
+				var rightOffset = parent.getBoundingClientRect().right - getStyleFloat(getComputedStyle(parent).borderRightWidth) - self._scrollElement.getBoundingClientRect().right;
 
 				self._track.style.marginRight = rightOffset + 'px';
 			}
