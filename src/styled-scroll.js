@@ -196,6 +196,9 @@
 			// With custom dimensions the width cannot be changed to hide the scrollbar so just default to native scrolling (Firefox)
 			if (!self._options.sameClientWidth && isUsingWidthHack) return true;
 
+			var resize = getComputedStyle(self._scrollElement).resize;
+			if (resize && resize !== 'none') return true;
+			
 			return false;
 		},
 

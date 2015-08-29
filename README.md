@@ -82,14 +82,14 @@ Browsers that lack necessary features for customizing the appearance will revert
 
 Opera Mini cannot work while it lacks support for element overflow. 
 
-<h2 id='methods'>Prototype Methods</h2>
+## Prototype Methods
 * `refresh()` forces an update on the position and size of the track and thumb.
 * `destroy()` removes the custom scrollbar from the dom, enables native scrolling, and deletes any allocated memory or events.
 * `getScrollElement()` returns the element provided to the constructor.
 * `getTrack()` returns the element used to display the track- it is a sibling of getScrollElement().
 * `getThumb()` returns the element used to display the thumb- it is a child of getTrack().
 
-<h2 id='options'>Options</h2>
+## Options
 Styled Scroll accepts an options parameter for customized behavior. _For brevity falsey default values will not be listed._
 
 ##### sameClientWidth, sameClientHeight, sameDimensions
@@ -118,8 +118,11 @@ Boolean. Uses the native scrollbar if it does not use any layout space. Many mob
 ##### disconnectScrollbar
 Boolean. The track will be removed from the dom when it does not need to be displayed instead of changing that track's `visible` css. The same track will be reinserted if the scrollbar should reappear.
 
-<h2 id='events'>Events</h2>
+## Events
 StyledScroll triggers `scrollstart` and `scrollend` events at the appropriate time. Events can be registered and removed using the `on(event, function)` and `off(event, function)` methods that take a single event name and the function to be executed as parameters. Example usage: `scroller.on('scrollstart', function () { console.log('Scrolling started!'); });`.
+
+## Caveats
+* User resizable elements via the css `resize` style will use native scrollbars [due to a webkit bug](https://code.google.com/p/chromium/issues/detail?id=293948) that prevents the scrollbar from being placed properly. This primarily affects textaras as their default is `resize: both` on Chrome and Firefox.
 
 ## Versioning
 Styled Scroll is maintained under [the Semantic Versioning guidelines](http://semver.org/).
