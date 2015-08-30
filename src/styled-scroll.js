@@ -196,9 +196,13 @@
 			// With custom dimensions the width cannot be changed to hide the scrollbar so just default to native scrolling (Firefox)
 			if (!self._options.sameClientWidth && isUsingWidthHack) return true;
 
+			// Textareas ignore .hide-scrollbar::webkit-scrollbar (not textarea::webkit-scrollbar, however)
+			if (self._scrollElement.tagName === 'TEXTAREA') return true;
+
+			// Resizable elements do not fire mutation observers in chrome
 			var resize = getComputedStyle(self._scrollElement).resize;
 			if (resize && resize !== 'none') return true;
-			
+
 			return false;
 		},
 
@@ -263,6 +267,8 @@
 
 			// Refresh the scrollbar's dimensions automatically based on configurable options
 			if (refreshTriggers.contentChange) {
+				_addEventListener(scrollElement, 'input', self.refresh);
+
 				if (supportsMutationObserver) {
 					self._observer = new MutationObserver(self.refresh);
 					self._observer.observe(scrollElement, { attributes: true, childList: true, subtree: true });
@@ -293,7 +299,10 @@
 		_removeRefreshTriggers: function () {
 			var self = this;
 			var refreshTriggers = self._options.refreshTriggers;
+
 			if (refreshTriggers.contentChange) {
+				_removeEventListener(self._scrollElement, 'input', self.refresh);
+
 				if (supportsMutationObserver) self._observer.disconnect();
 				else _removeEventListener(self._scrollElement, 'DOMSubtreeModified', self.refresh);
 			}
