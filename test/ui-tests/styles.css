@@ -1,0 +1,15 @@
+.styled-scroll-track {
+	top: 0;
+	right: 0;
+	height: 100%;
+	width: 12px;
+}
+
+.styled-scroll-thumb {
+	background: darkolivegreen;
+	opacity: .7;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}

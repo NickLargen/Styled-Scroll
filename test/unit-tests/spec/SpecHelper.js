@@ -16,8 +16,6 @@ beforeEach(function () {
 
 	var body = "<div id='wrapper' style='height:400px; width:400px;'><p id='content'>" + text + "</p></div>"
 
-
-
 	$('#testArea')[0].innerHTML = body
 
 	wrapper = $('#wrapper')[0]

@@ -20,8 +20,9 @@ gulp.task(function serve() {
     browserSync.init({
         server: {
             baseDir: '.',
-            index: 'demos/index.html'
+            directory: true
         },
+        startPath: 'demos/index.html',
         files: ['demos/**', sourceFiles],
         browser: ['chrome', 'firefox'],
         logLevel: 'info',
@@ -33,6 +34,7 @@ gulp.task(function serve() {
         // Log connections
         // logConnections: true,
         logPrefix: projectName,
+        // Don't mirror actions
         ghostMode: false
     });
 });
